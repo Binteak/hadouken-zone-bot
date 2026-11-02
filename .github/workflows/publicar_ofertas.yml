@@ -1,0 +1,98 @@
+# Hadouken Zone - publicación diaria en Telegram (GitHub Actions)
+#
+# Cada día a las 09:07 (hora de Madrid) ejecuta una pasada del bot:
+#   1) mensaje de buenos días con imagen
+#   2) escaneo de Amazon y publicación de todas las ofertas nuevas (60 s entre ofertas)
+#
+# El historial de ofertas publicadas y el estado se guardan en la rama "estado",
+# para no repetir ofertas ni el buenos días entre ejecuciones.
+#
+# Secrets necesarios (Settings > Secrets and variables > Actions):
+#   TELEGRAM_BOT_TOKEN, TELEGRAM_CHAT_ID
+# Ejecución manual: pestaña Actions > "Publicar ofertas" > Run workflow
+#   (por defecto en DRY_RUN: muestra el resultado en el registro sin publicar).
+
+name: Publicar ofertas
+
+on:
+  schedule:
+    - cron: "7 9 * * *"
+      timezone: "Europe/Madrid"
+  workflow_dispatch:
+    inputs:
+      dry_run:
+        description: "Simulación: true = no publica nada en Telegram"
+        type: choice
+        options: ["true", "false"]
+        default: "true"
+
+concurrency:
+  group: publicar-ofertas
+  cancel-in-progress: false
+
+permissions:
+  contents: write
+
+jobs:
+  publicar:
+    runs-on: ubuntu-latest
+    timeout-minutes: 60
+    env:
+      TELEGRAM_BOT_TOKEN: ${{ secrets.TELEGRAM_BOT_TOKEN }}
+      TELEGRAM_CHAT_ID: ${{ secrets.TELEGRAM_CHAT_ID }}
+      DRY_RUN: ${{ github.event_name == 'workflow_dispatch' && inputs.dry_run || 'false' }}
+      # Afiliación desactivada hasta nuevo aviso (ver docs/contexto_hadouken.md)
+      AMAZON_PARTNER_TAG: ""
+      TIMEZONE: Europe/Madrid
+      PYTHONUTF8: "1"
+    steps:
+      - name: Descargar el código
+        uses: actions/checkout@v4
+
+      - name: Preparar Python
+        uses: actions/setup-python@v5
+        with:
+          python-version: "3.13"
+          cache: pip
+
+      - name: Instalar dependencias
+        run: pip install -r requirements.txt
+
+      - name: Recuperar el estado (rama "estado")
+        run: |
+          mkdir -p data
+          if git ls-remote --exit-code --heads origin estado >/dev/null; then
+            git fetch --depth=1 origin estado
+            git show origin/estado:offers.json > data/offers.json || rm -f data/offers.json
+            git show origin/estado:state.json  > data/state.json  || rm -f data/state.json
+            echo "Estado recuperado."
+          else
+            echo "Primera ejecución: sin estado previo."
+          fi
+
+      - name: Ejecutar el bot (una pasada)
+        run: python main.py --ciclo
+
+      - name: Guardar el estado (solo si se ha publicado de verdad)
+        if: ${{ always() && env.DRY_RUN == 'false' }}
+        run: |
+          set -e
+          mkdir -p /tmp/estado && cd /tmp/estado
+          git init -q -b estado
+          cp "$GITHUB_WORKSPACE"/data/*.json . 2>/dev/null || true
+          if [ -z "$(ls -A)" ]; then echo "No hay estado que guardar."; exit 0; fi
+          git config user.name  "hadouken-bot"
+          git config user.email "hadouken-bot@users.noreply.github.com"
+          git add -A
+          git commit -q -m "Estado $(date -u +%Y-%m-%dT%H:%MZ)"
+          git push -q -f "https://x-access-token:${{ github.token }}@github.com/${{ github.repository }}.git" estado
+          echo "Estado guardado en la rama 'estado'."
+
+      - name: Guardar registros (diagnóstico)
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: registros-${{ github.run_number }}
+          path: logs/
+          retention-days: 7
+          if-no-files-found: ignore

@@ -1,0 +1,9 @@
+-r requirements.txt
+
+# Tests
+pytest>=8.0
+
+# Herramientas de branding (tools/branding)
+numpy>=1.26
+scipy>=1.11
+opencv-python>=4.8

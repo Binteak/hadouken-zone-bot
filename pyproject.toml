@@ -1,0 +1,10 @@
+[project]
+name = "hadouken-zone"
+version = "1.1.0"
+description = "Bot de Telegram con ofertas de videojuegos de PS5 y Nintendo Switch en Amazon"
+readme = "README.md"
+requires-python = ">=3.10"
+
+[tool.pytest.ini_options]
+testpaths = ["tests"]
+addopts = "-q"
