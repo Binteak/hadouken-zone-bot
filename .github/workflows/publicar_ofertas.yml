@@ -75,6 +75,10 @@ jobs:
             echo "Primera ejecución: sin estado previo."
           fi
 
+      - name: Comprobar Telegram (token y canal, sin publicar)
+        if: ${{ env.DRY_RUN == 'false' }}
+        run: python main.py --verificar
+
       - name: Ejecutar el bot (una pasada)
         run: python main.py --ciclo
 

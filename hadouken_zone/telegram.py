@@ -35,6 +35,12 @@ class TelegramClient:
             raise TelegramError(f"Telegram devolvió un error: {payload.get('description', payload)}")
         return payload
 
+    def check(self) -> tuple[str, str]:
+        """Comprueba token y canal sin publicar nada. Devuelve (bot, canal)."""
+        bot = self._call("getMe", {})["result"]
+        chat = self._call("getChat", {"chat_id": self.chat_id})["result"]
+        return "@" + bot.get("username", "?"), chat.get("title") or chat.get("username") or str(chat.get("id"))
+
     def send_message(self, text: str, preview: bool = False) -> bool:
         if self.dry_run:
             log.info("[DRY RUN] Mensaje:\n%s", text)

@@ -6,6 +6,7 @@
     py main.py --once          Un solo escaneo de Amazon y publicación ahora
     py main.py --buenos-dias   Envía ahora el mensaje de buenos días
     py main.py --test          Envía el mensaje de presentación del canal
+    py main.py --verificar     Comprueba el token y el canal de Telegram sin publicar nada
 
 Con DRY_RUN=true en .env todo se muestra en consola y no se publica nada.
 """
@@ -31,6 +32,7 @@ def main() -> int:
     group.add_argument("--once", action="store_true", help="un escaneo y publicación ahora")
     group.add_argument("--buenos-dias", action="store_true", help="envía el buenos días ahora")
     group.add_argument("--test", action="store_true", help="envía el mensaje de presentación")
+    group.add_argument("--verificar", action="store_true", help="comprueba token y canal sin publicar")
     args = parser.parse_args()
 
     setup_logging()
@@ -40,6 +42,15 @@ def main() -> int:
              ", ".join(settings.offer_sources))
 
     telegram = TelegramClient(settings.telegram_bot_token, settings.telegram_chat_id, settings.dry_run)
+
+    if args.verificar:
+        try:
+            bot, chat = telegram.check()
+        except Exception as exc:
+            log.error("Configuración de Telegram NO válida: %s", exc)
+            return 1
+        log.info("Telegram OK: bot %s con acceso al canal '%s'", bot, chat)
+        return 0
 
     if args.test:
         telegram.send_message(messages.test_message())

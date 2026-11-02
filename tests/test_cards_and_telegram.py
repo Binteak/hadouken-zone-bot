@@ -82,3 +82,21 @@ def test_missing_credentials():
         client.send_message("x")
     except TelegramError as exc:
         assert "TELEGRAM_BOT_TOKEN" in str(exc)
+
+
+class CheckSession:
+    def __init__(self):
+        self.calls = []
+
+    def post(self, url, data=None, files=None, timeout=None):
+        self.calls.append(url.rsplit("/", 1)[1])
+        if url.endswith("/getMe"):
+            return FakeResponse({"ok": True, "result": {"username": "hadouken_bot"}})
+        return FakeResponse({"ok": True, "result": {"title": "Hadouken Zone"}})
+
+
+def test_check_validates_without_sending():
+    session = CheckSession()
+    bot, chat = TelegramClient("t", "@c", dry_run=False, session=session).check()
+    assert (bot, chat) == ("@hadouken_bot", "Hadouken Zone")
+    assert session.calls == ["getMe", "getChat"]
