@@ -1,26 +1,19 @@
-"""Diagnóstico TEMPORAL (3): estructura de ofertas de Amazon en Chollometro (guarda ejemplos)."""
-import json, os, re
+"""Diagnóstico TEMPORAL (4): datos de la oferta principal en Chollometro."""
+import re
 import requests
 
 UA = {"User-Agent": "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/124.0 Safari/537.36",
       "Accept-Language": "es-ES,es;q=0.9"}
 s = requests.Session(); s.headers.update(UA)
-os.makedirs("muestras", exist_ok=True)
-feeds = {"nuevos": "https://www.chollometro.com/rss/nuevos", "hot": "https://www.chollometro.com/rss/hot"}
-amazon_links = []
-for name, url in feeds.items():
-    txt = s.get(url, timeout=25).text
-    open(f"muestras/rss_{name}.xml", "w", encoding="utf-8").write(txt)
-    for it in re.findall(r"<item>(.*?)</item>", txt, re.S):
-        if 'name="Amazon"' in it:
-            amazon_links.append(re.search(r"<link>(.*?)</link>", it, re.S).group(1).strip())
-print("ofertas de Amazon en RSS:", len(amazon_links))
-games = [l for l in amazon_links if re.search(r"ps5|playstation|switch|juego", l)]
-pick = (games + [l for l in amazon_links if l not in games])[:3]
-for i, link in enumerate(pick):
-    html = s.get(link, timeout=25).text
-    open(f"muestras/oferta_{i}.html", "w", encoding="utf-8").write(html)
-    print("\n==", link)
-    for key in ["price", "nextBestPrice", "percentage", "discount", "isExpired", "temperature", "title", "mainImage", "merchant", "status", "expired"]:
-        ms = re.findall(r'\\?"' + key + r'\\?":\s*([^,}]{0,80})', html)
-        print(f"  {key}: {ms[:4]}")
+txt = s.get("https://www.chollometro.com/rss/nuevos", timeout=25).text
+items = [it for it in re.findall(r"<item>(.*?)</item>", txt, re.S) if 'name="Amazon"' in it]
+print("ITEM RSS COMPLETO:\n", items[0][:1800])
+link = re.search(r"<link>(.*?)</link>", items[0], re.S).group(1).strip()
+tid = re.search(r"-(\d+)$", link).group(1)
+html = s.get(link, timeout=25).text
+print("\nthreadId", tid, "apariciones:", len(re.findall(tid, html)))
+for m in list(re.finditer(r'threadId\\?"\s*:\s*\\?"?' + tid, html))[:2]:
+    print("\n--- contexto threadId ---\n", html[max(0, m.start()-300):m.start()+1500])
+for tag in ["data-vue3", "__INITIAL_STATE__", "application/ld+json", "og:title", "og:image", "og:price", "product:price"]:
+    i = html.find(tag)
+    print(f"\n[{tag}] pos={i}:", html[i:i+400].replace("\n", " ") if i >= 0 else "-")
