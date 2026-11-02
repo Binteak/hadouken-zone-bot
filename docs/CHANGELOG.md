@@ -2,6 +2,7 @@
 
 ## 1.2.1 — 2026-11-02 · Descuento mínimo 15 %
 - `MIN_DISCOUNT_PERCENT` pasa de 20 % a **15 %** (más volumen de ofertas). Se actualizan los mensajes, la imagen de bienvenida y la documentación.
+- Cron del workflow en UTC (sin `timezone:`), porque las pasadas programadas no arrancaban. El horario de Madrid lo sigue controlando el bot.
 - Nuevo `py main.py --verificar`: comprueba el token y el canal de Telegram sin publicar nada. El workflow lo ejecuta antes de cada pasada real.
 
 ## 1.2.0 — 2026-11-02 · Fuentes enchufables y Chollometro (producción en GitHub Actions)

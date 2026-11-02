@@ -15,7 +15,7 @@
 ### Producción: GitHub Actions + fuente Chollometro (gratis, sin equipos encendidos)
 
 - **Repositorio privado:** `Binteak/hadouken-zone-bot`. Workflow: `.github/workflows/publicar_ofertas.yml`.
-- **Cron:** cada 30 minutos, de **09:07 a 23:07, hora de Madrid** (`7,37 9-22 * * *` y `7 23 * * *`, con `timezone: Europe/Madrid`). Se evita la hora en punto, que es cuando GitHub más se retrasa.
+- **Cron:** cada 30 minutos, de **09:07 a 23:07, hora de Madrid**. Está escrito en UTC (`7,37 7-21 * * *` y `7 22 * * *`) para cubrir tanto el horario de invierno como el de verano sin depender de la clave `timezone:` (con ella no arrancaban las pasadas automáticas). El bot decide con la hora de Madrid si le toca publicar, y las pasadas fuera de horario terminan en segundos. Se evita la hora en punto, que es cuando GitHub más se retrasa.
 - **Cada ejecución hace `python main.py --ciclo`:**
   - A las 09:07, **buenos días** con imagen.
   - En cada ejecución, **escaneo de las fuentes** y publicación de **todas** las ofertas nuevas válidas, con **60 s** entre ofertas (máximo 25 por ejecución).
