@@ -1,7 +1,7 @@
 # Contexto del proyecto: Hadouken Zone
 
 > Documento maestro del proyecto. Es la referencia para cualquier persona o asistente (Claude) que trabaje en él.
-> Última actualización: 2026-11-02 · versión 1.1.0
+> Última actualización: 2026-11-02 · versión 1.2.0
 
 ## 1. Qué es
 
@@ -12,33 +12,34 @@
 
 ## 2. Funcionamiento diario (requisito del producto)
 
-### ⚠️ Resultado de la prueba (2026-11-02): Amazon bloquea GitHub Actions
-
-Dos ejecuciones de prueba (`dry_run`) desde GitHub Actions recibieron **HTTP 503 (bloqueo de Amazon)** en la primera petición. Las IP de GitHub son de centro de datos y Amazon las bloquea. **El workflow `publicar_ofertas.yml` está desactivado** (`disabled_manually`) para que no publique un buenos días sin ofertas. No se intenta esquivar el bloqueo (ni proxies ni rotación de IP).
-GitHub se mantiene como repositorio del código y para los tests automáticos (`tests.yml`). El scraping de Amazon debe hacerse desde una **conexión doméstica** (PC, Android o Raspberry Pi en casa) o, en el futuro, mediante la API oficial de Amazon para afiliados.
-
-### (Desactivado) GitHub Actions, una vez al día
+### Producción: GitHub Actions + fuente Chollometro (gratis, sin equipos encendidos)
 
 - **Repositorio privado:** `Binteak/hadouken-zone-bot`. Workflow: `.github/workflows/publicar_ofertas.yml`.
-- **Cron:** cada día a las **09:07, hora de Madrid** (`timezone: Europe/Madrid`). Se evita la hora en punto porque es cuando GitHub más retrasa.
-- **Cada ejecución hace `python main.py --ciclo`:** buenos días con imagen y, a continuación, escaneo de Amazon y publicación de **todas** las ofertas nuevas, con **60 s** entre ofertas (máximo 25 por ejecución).
-- **Estado entre ejecuciones:** `offers.json` y `state.json` se guardan en la rama **`estado`** (commit forzado por el propio workflow). Solo se guarda cuando se publica de verdad: las pruebas con `dry_run` no lo tocan.
-- **Secrets de GitHub:** `TELEGRAM_BOT_TOKEN` y `TELEGRAM_CHAT_ID`. `AMAZON_PARTNER_TAG` va vacío en el propio workflow (afiliación desactivada).
+- **Cron:** cada 30 minutos, de **09:07 a 23:07, hora de Madrid** (`7,37 9-22 * * *` y `7 23 * * *`, con `timezone: Europe/Madrid`). Se evita la hora en punto, que es cuando GitHub más se retrasa.
+- **Cada ejecución hace `python main.py --ciclo`:**
+  - A las 09:07, **buenos días** con imagen.
+  - En cada ejecución, **escaneo de las fuentes** y publicación de **todas** las ofertas nuevas válidas, con **60 s** entre ofertas (máximo 25 por ejecución).
+- **Estado entre ejecuciones:** `offers.json` y `state.json` se guardan en la rama **`estado`** (commit forzado del propio workflow). Solo se guarda cuando se publica de verdad.
+- **Secrets de GitHub:** `TELEGRAM_BOT_TOKEN` y `TELEGRAM_CHAT_ID`. `AMAZON_PARTNER_TAG` va vacío en el workflow (afiliación desactivada).
 - **Ejecución manual:** *Actions → Publicar ofertas → Run workflow* (por defecto `dry_run=true`).
-- **Coste:** repo privado en GitHub Free. Una ejecución diaria de 5 a 30 minutos cabe en los ~2.000 minutos mensuales. Si sobra cuota, se puede añadir una segunda ejecución por la tarde con otra línea `cron`.
-- **Limitaciones:** GitHub no garantiza la puntualidad del cron (puede retrasarlo o, en incidencias, saltarse alguna ejecución). Amazon podría bloquear las IP de GitHub, que son de centro de datos. Si ocurre, el escaneo se para sin publicar y el HTML queda en los *Artifacts* de la ejecución.
+- **Coste:** repo privado en GitHub Free (~2.000 min/mes). Unas 30 ejecuciones al día de ~1 minuto, más 1 minuto por oferta publicada, suman unos 1.000 minutos al mes.
+- **Por qué no se lee Amazon desde GitHub:** la prueba del 2026-11-02 dio **HTTP 503**, porque Amazon bloquea las IP de centros de datos. No se intenta esquivar (ni proxies ni rotación de IP).
 
-### Modo alternativo: PC 24/7 (`py main.py`)
+### Alternativa en casa: PC 24/7 (`py main.py`)
 
-| Momento | Comportamiento |
-|---|---|
-| `GOOD_MORNING_TIME` (09:00, Europe/Madrid) | Mensaje de **buenos días** con la imagen `branding/telegram/cabeceras/cabecera_buenos_dias.png`. El texto cambia según el día de la semana y lleva la fecha. Se envía una sola vez al día, aunque el bot se reinicie. Si el bot arranca más de 2 horas tarde, ese día no se envía. |
-| Justo después y cada `SCAN_INTERVAL_MINUTES` (30) | **Escaneo de Amazon** y publicación de **todas** las ofertas nuevas que cumplan las reglas. |
-| Entre oferta y oferta | `OFFER_DELAY_SECONDS` (**60 s**). |
-| Por escaneo | Máximo `MAX_OFFERS_PER_CYCLE` (25). |
-| `ACTIVE_UNTIL` (23:30) | Fin de la jornada: no se escanea ni se publica hasta el día siguiente. |
+Buenos días a las 09:00 (`GOOD_MORNING_TIME`), escaneo cada 30 minutos (`SCAN_INTERVAL_MINUTES`), 60 s entre ofertas y fin de la jornada a las 23:30 (`ACTIVE_UNTIL`). Desde casa puede usar también la fuente `amazon` (`OFFER_SOURCES=chollometro,amazon`).
+**No deben funcionar el modo GitHub y el modo PC a la vez:** cada uno tiene su propio historial y se duplicarían las ofertas.
 
-**No deben funcionar los dos modos a la vez**, porque cada uno tiene su propio historial y se duplicarían las ofertas.
+## 2 bis. Fuentes de ofertas (`hadouken_zone/sources/`)
+
+El bot no depende de una sola web. Cada fuente implementa `find_offers(limit, is_new)` y devuelve objetos `Offer` validados con `rules.py`. Se activan con `OFFER_SOURCES` (en orden de prioridad), y el pipeline las combina sin repetir ASIN. Si una fuente falla o está bloqueada, las demás siguen funcionando.
+
+| Fuente | Estado | Cómo obtiene la oferta |
+|---|---|---|
+| `chollometro` | **Activa en producción** | Recorre los RSS `nuevos` y `hot` y se queda con las ofertas cuya tienda es **Amazon**. Descarta antes las que no son juegos de PS5 o Switch, según el título. De la página de cada oferta lee el objeto JSON de la oferta principal (`threadId`): `price`, `nextBestPrice` (precio anterior), `linkHost`, `status` y si ha caducado. El **ASIN** sale de la redirección `/visit/threadmain/<id>` (`Location` con `amazon.es/dp/ASIN`), sin entrar en Amazon. El título se limpia de precios y cupones. |
+| `amazon` | Disponible (solo en casa) | Búsqueda en Amazon.es y verificación del precio en la ficha del producto. |
+
+**Futuras fuentes** (añadir un módulo en `sources/` y registrarlo en `REGISTRY`): otras webs de chollos, la API oficial de Amazon para afiliados (cuando se active la afiliación) o la fuente `amazon` desde un equipo en casa.
 
 ## 3. Reglas de negocio
 
@@ -50,7 +51,7 @@ Una oferta solo se publica si cumple **todas** estas condiciones (`hadouken_zone
 4. Tiene **precio actual y precio anterior válidos**, y el actual es menor que el anterior.
 5. **Descuento ≥ 20 %** (`MIN_DISCOUNT_PERCENT`).
 6. **Coherencia del descuento:** se rechaza si supera el 90 % o si el precio de referencia es mayor de 300 €, porque indica un precio anterior falso o erróneo.
-7. **Verificada en la ficha del producto:** antes de publicar se abre `/dp/ASIN` y se usan su precio y su precio de referencia ("Precio recomendado" o el precio más bajo reciente), que mandan sobre lo que mostraba la búsqueda.
+7. **Precio comprobado según la fuente:** con la fuente `amazon` se abre la ficha `/dp/ASIN` y su precio manda. Con `chollometro` se usan el precio y el precio anterior publicados en la oferta (moderada por la comunidad) y se descartan las caducadas. Si una oferta no tiene precio anterior, no se publica, porque el 20 % no se puede comprobar.
 8. **Sin duplicados:** no se vuelve a publicar un ASIN durante `REPUBLISH_AFTER_DAYS` (7) días, salvo que su precio baje al menos otro 5 %. El historial está en `data/offers.json`.
 
 Las ofertas de cada escaneo se publican de **mayor a menor descuento**.
@@ -74,9 +75,9 @@ Las ofertas de cada escaneo se publican de **mayor a menor descuento**.
 
 ```
 main.py ─► Scheduler (scheduler.py) ─► Pipeline (pipeline.py)
-                                         ├─ AmazonScraper (amazon/scraper.py)
-                                         │    ├─ AmazonClient  (amazon/client.py)  HTTP, pausas, CAPTCHA
-                                         │    └─ parser        (amazon/parser.py)  HTML → Offer
+                                         ├─ Fuentes (sources/, OFFER_SOURCES)
+                                         │    ├─ ChollometroSource (sources/chollometro.py)  RSS + oferta + ASIN
+                                         │    └─ AmazonScraper     (sources/amazon/)          HTTP, parser, CAPTCHA
                                          ├─ rules.py           validación
                                          ├─ OfferStore         (storage.py)        data/offers.json
                                          ├─ cards.py           tarjeta JPG
@@ -85,11 +86,9 @@ main.py ─► Scheduler (scheduler.py) ─► Pipeline (pipeline.py)
 ```
 
 **Flujo de un escaneo:**
-1. Recorre las búsquedas de `config.SEARCHES` (juegos PS5 y juegos Switch), `SCRAPE_PAGES` páginas de cada una, con pausas de `REQUEST_DELAY_SECONDS` más un margen aleatorio.
-2. Lee los resultados (ASIN, título, precio, precio tachado e imagen) y quita los duplicados.
-3. Aplica las reglas y la deduplicación, y ordena por descuento.
-4. Verifica cada candidata en su ficha y vuelve a aplicar las reglas.
-5. Publica cada oferta con una pausa de 60 s y la marca como publicada (solo si `DRY_RUN=false`).
+1. Cada fuente activa devuelve sus ofertas válidas y nuevas: aplica `rules.py` y comprueba con el historial que no se hayan publicado ya.
+2. El pipeline las combina sin repetir ASIN y las ordena de mayor a menor descuento.
+3. Publica cada oferta con una pausa de 60 s y la marca como publicada (solo si `DRY_RUN=false`).
 
 **Robustez:**
 - Si aparece un CAPTCHA o un bloqueo, el escaneo se detiene sin intentar saltarlo y se reintenta en el siguiente.
@@ -130,7 +129,8 @@ main.py ─► Scheduler (scheduler.py) ─► Pipeline (pipeline.py)
 
 ## 10. Riesgos y limitaciones
 
-- **Scraping de Amazon:** puede ir en contra de las Condiciones de Uso de Amazon y del Acuerdo de Afiliados. Además, Amazon cambia su HTML y puede mostrar CAPTCHA. Para vender el producto con garantías, hay que migrar a la **API oficial de Amazon para afiliados**. El diseño ya lo permite: basta con sustituir `amazon/scraper.py` por otra fuente que devuelva objetos `Offer`.
+- **Dependencia de Chollometro:** si cambia su web o limita el acceso, la fuente deja de encontrar ofertas. Lo detectan los avisos del registro de GitHub Actions. Reutilizar sus ofertas de forma automática es una zona gris respecto a sus condiciones de uso. Además, solo se publican ofertas que la comunidad ya ha encontrado, y algunos días habrá pocas o ninguna de juegos en Amazon.
+- **Scraping de Amazon:** puede ir en contra de sus Condiciones de Uso y del Acuerdo de Afiliados; además, Amazon bloquea los centros de datos y muestra CAPTCHA. Para vender el producto con garantías, hay que migrar a la **API oficial de Amazon para afiliados**, que sería una fuente más en `sources/`.
 - **Precios:** los precios de Amazon cambian. El precio publicado es el del momento de la verificación.
 - **X/Twitter:** fuera de alcance (la API devolvió 403). Se retiró del producto en la versión 1.0.0.
 
@@ -140,7 +140,8 @@ main.py ─► Scheduler (scheduler.py) ─► Pipeline (pipeline.py)
 2. Revisar el parser con el HTML real de Amazon tras el primer escaneo (`logs/html_debug/`).
 3. Migrar a la API oficial de Amazon para afiliados.
 4. Mostrar la hora de consulta del precio en el pie ("precio a las 10:30").
-5. ~~Probar GitHub Actions~~ → bloqueado por Amazon (503). Producción desde una conexión doméstica: tarea diaria de Windows en el PC, o un Android o una Raspberry Pi en casa.
-6. Resumen semanal automático ("Top 5 de la semana", la cabecera ya existe).
-7. Panel de estadísticas (ofertas publicadas y clics).
-8. Producto vendible: instalador, licencia y manual de cliente.
+5. ~~Leer Amazon desde GitHub Actions~~: bloqueado (503). Producción con la fuente `chollometro` desde GitHub. Para leer Amazon directamente hace falta un equipo en casa o la API oficial.
+6. Añadir más fuentes de chollos para tener más volumen de ofertas.
+7. Resumen semanal automático ("Top 5 de la semana", la cabecera ya existe).
+8. Panel de estadísticas (ofertas publicadas y clics).
+9. Producto vendible: instalador, licencia y manual de cliente.

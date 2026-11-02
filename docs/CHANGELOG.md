@@ -1,5 +1,14 @@
 # Registro de cambios
 
+## 1.2.0 — 2026-11-02 · Fuentes enchufables y Chollometro (producción en GitHub Actions)
+- Nueva arquitectura de **fuentes de ofertas** (`hadouken_zone/sources/`): contrato común `find_offers`, registro de fuentes y `OFFER_SOURCES` en `.env`. El scraper de Amazon pasa a `sources/amazon/`.
+- **Fuente `chollometro`**: lee los RSS (nuevos y populares), se queda con las ofertas de Amazon y lee de cada una el precio, el precio anterior (`nextBestPrice`), si ha caducado y el **ASIN** (por la redirección `/visit/threadmain/<id>`). Limpia el título y publica el enlace limpio de Amazon.
+- Validado en GitHub Actions con datos reales: 8 de 8 ofertas de Amazon leídas con ASIN y precios.
+- Pipeline multi-fuente: deduplicación por ASIN entre fuentes; una fuente bloqueada no detiene a las demás.
+- Modo cron: cada ejecución programada escanea, sin intervalo mínimo.
+- Workflow de publicación **reactivado**: cada 30 min de 09:07 a 23:07 (Europe/Madrid).
+- 103 tests (21 nuevos). Acciones de GitHub actualizadas (checkout v5, setup-python v6).
+
 ## 1.1.0 — 2026-11-02 · Automatización en GitHub Actions
 - Nuevo modo `py main.py --ciclo`: una pasada del calendario (buenos días + escaneo) y termina. Pensado para cron.
 - `.github/workflows/publicar_ofertas.yml`: ejecución diaria a las 09:07 (Europe/Madrid), estado persistente en la rama `estado`, ejecución manual en `dry_run` y registros como *artifact*.

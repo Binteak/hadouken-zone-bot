@@ -4,18 +4,23 @@
 
 ## Qué hace cada día
 
-**Modo de producción: GitHub Actions (gratis, una vez al día)**
+**Producción: GitHub Actions, gratis y sin ningún equipo encendido**
 
 | Hora (Madrid) | Acción |
 |---|---|
 | 09:07 | Mensaje de **buenos días** con imagen de cabecera. |
-| Justo después | **Escaneo de Amazon**: busca juegos de PS5 y Switch, verifica cada oferta en su ficha y publica todas las nuevas, con **1 minuto** entre una y otra. |
+| Cada 30 min (09:07 – 23:07) | Busca ofertas nuevas en las **fuentes** y publica todas las válidas, con **1 minuto** entre ofertas. |
 
-**Modo alternativo: PC encendido 24/7** (`py main.py`): buenos días a las 09:00 y escaneo cada 30 minutos hasta las 23:30.
+**Fuentes de ofertas** (`hadouken_zone/sources/`, se eligen con `OFFER_SOURCES`):
 
-Los horarios se cambian en `.env` (modo PC) o en `.github/workflows/publicar_ofertas.yml` (modo GitHub).
+| Fuente | Cómo funciona | Dónde funciona |
+|---|---|---|
+| `chollometro` *(activa)* | Ofertas **de Amazon** publicadas en Chollometro: precio, precio anterior y **ASIN** (por la redirección de la oferta). | GitHub Actions y en casa |
+| `amazon` | Busca directamente en Amazon.es y verifica cada oferta en su ficha. | Solo desde una conexión doméstica (Amazon bloquea GitHub) |
 
-Cada oferta se publica como **foto (tarjeta 1280x720)** con un texto que incluye el título, la plataforma, el precio actual, el precio anterior tachado, el % de descuento, lo que te ahorras y el enlace a Amazon.
+Cada oferta se publica como **foto (tarjeta 1280x720)** con título, plataforma, precio actual, precio anterior tachado, % de descuento, ahorro y el **enlace limpio a Amazon** (`https://www.amazon.es/dp/ASIN`).
+
+**Alternativa en casa:** `py main.py` deja el bot 24/7 en un PC (buenos días a las 09:00 y escaneo cada 30 min hasta las 23:30).
 
 ## Estructura
 
@@ -26,7 +31,10 @@ hadouken-zone/
 ├── hadouken_zone/           Código del producto
 │   ├── config.py            Rutas y ajustes (.env)
 │   ├── models.py            Modelo Offer
-│   ├── amazon/              Fuente de ofertas: cliente HTTP, parser HTML y scraper
+│   ├── sources/             Fuentes de ofertas enchufables
+│   │   ├── base.py          Contrato común (find_offers) y error de bloqueo
+│   │   ├── chollometro.py   Fuente Chollometro (RSS + datos de la oferta + ASIN)
+│   │   └── amazon/          Fuente Amazon: cliente HTTP, parser HTML y scraper
 │   ├── rules.py             Reglas de negocio (plataforma, exclusiones, descuento coherente)
 │   ├── affiliate.py         Enlaces de producto con ID de afiliado
 │   ├── storage.py           Historial de publicadas y estado (JSON, escritura atómica)
@@ -71,7 +79,7 @@ Con `DRY_RUN=true` todo se muestra en la consola y no se publica nada. Para publ
 
 ## Automatización en GitHub Actions (producción)
 
-Repositorio privado `Binteak/hadouken-zone-bot`. El workflow `.github/workflows/publicar_ofertas.yml` ejecuta `python main.py --ciclo` cada día a las 09:07 (Europe/Madrid).
+Repositorio privado `Binteak/hadouken-zone-bot`. El workflow `.github/workflows/publicar_ofertas.yml` ejecuta `python main.py --ciclo` cada 30 minutos entre las 09:07 y las 23:07 (Europe/Madrid), con la fuente `chollometro`.
 
 **Configuración (una sola vez):** en GitHub → *Settings → Secrets and variables → Actions → New repository secret*:
 
@@ -84,7 +92,7 @@ Repositorio privado `Binteak/hadouken-zone-bot`. El workflow `.github/workflows/
 
 **Estado entre ejecuciones:** el historial de publicadas (`offers.json`) y el estado (`state.json`) se guardan en la rama `estado`, que actualiza el propio bot. No la borres.
 
-**Coste:** el repo es privado y entra en los ~2.000 minutos gratis al mes de GitHub Free (una ejecución diaria de 5 a 30 minutos). Los tests (`tests.yml`) se ejecutan en cada push de código.
+**Coste:** repo privado en GitHub Free (~2.000 minutos al mes). Unas 30 ejecuciones al día de ~1 minuto, más 1 minuto por oferta publicada, suman unos 1.000 minutos al mes. Los tests (`tests.yml`) se ejecutan en cada push de código.
 
 **Importante:** no ejecutes a la vez el bot 24/7 en tu PC y el de GitHub, o se publicarán ofertas duplicadas.
 
@@ -110,6 +118,7 @@ Los tests no acceden a internet: el HTML de Amazon y la API de Telegram están s
 | `MAX_OFFERS_PER_CYCLE` | `25` | Límite por escaneo |
 | `MIN_DISCOUNT_PERCENT` | `20` | Descuento mínimo |
 | `REPUBLISH_AFTER_DAYS` | `7` | No repetir un producto antes de N días (salvo si baja otro 5 %) |
+| `OFFER_SOURCES` | `chollometro` | Fuentes de ofertas, separadas por comas |
 | `INCLUDE_SWITCH_2` | `false` | Incluir juegos de Switch 2 |
 | `REQUEST_DELAY_SECONDS` / `SCRAPE_PAGES` | `4` / `2` | Prudencia al consultar Amazon |
 | `VERIFY_PRODUCT_PAGE` | `true` | Confirmar precios en la ficha antes de publicar |
@@ -122,4 +131,4 @@ Los tests no acceden a internet: el HTML de Amazon y la API de Telegram están s
 
 ## Aviso legal
 
-Leer datos de Amazon de forma automática puede ir en contra de sus Condiciones de Uso y de las del programa de Afiliados. Antes de comercializar el producto, conviene pasar a la API oficial de Amazon para afiliados (ver `docs/contexto_hadouken.md`, hoja de ruta). Cuando hay ID de afiliado, cada publicación lo indica y el buenos días incluye la declaración de Amazon Afiliados.
+Leer datos de Amazon o de Chollometro de forma automática puede ir en contra de sus condiciones de uso. Antes de comercializar el producto, conviene pasar a la API oficial de Amazon para afiliados (ver `docs/contexto_hadouken.md`, hoja de ruta). Cuando hay ID de afiliado, cada publicación lo indica y el buenos días incluye la declaración de Amazon Afiliados.
