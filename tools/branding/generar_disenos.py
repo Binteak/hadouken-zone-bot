@@ -49,7 +49,7 @@ def bienvenida():
     # Ventajas
     d = ImageDraw.Draw(img)
     fb = font(30, 'Bold', italic=False, display=False)
-    items = ['Descuentos de -20% o más', 'Precios comprobados', 'Enlace directo a la oferta']
+    items = ['Descuentos de -15% o más', 'Precios comprobados', 'Enlace directo a la oferta']
     yy = 500
     for t in items:
         bolt(d, 76, yy - 1, 36)

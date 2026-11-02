@@ -53,7 +53,7 @@ def main() -> int:
         return 0
 
     if args.test:
-        telegram.send_message(messages.test_message())
+        telegram.send_message(messages.test_message(settings.min_discount_percent))
         log.info("Mensaje de prueba enviado")
         return 0
 

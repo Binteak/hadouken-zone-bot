@@ -1,7 +1,7 @@
 # Contexto del proyecto: Hadouken Zone
 
 > Documento maestro del proyecto. Es la referencia para cualquier persona o asistente (Claude) que trabaje en él.
-> Última actualización: 2026-11-02 · versión 1.2.0
+> Última actualización: 2026-11-02 · versión 1.2.1
 
 ## 1. Qué es
 
@@ -49,9 +49,9 @@ Una oferta solo se publica si cumple **todas** estas condiciones (`hadouken_zone
 2. **No es un accesorio ni hardware**: mandos, auriculares, consolas, cargadores, fundas, amiibo, tarjetas regalo, suscripciones (PS Plus, Switch Online)…
 3. Está **disponible**.
 4. Tiene **precio actual y precio anterior válidos**, y el actual es menor que el anterior.
-5. **Descuento ≥ 20 %** (`MIN_DISCOUNT_PERCENT`).
+5. **Descuento ≥ 15 %** (`MIN_DISCOUNT_PERCENT`; era 20 % hasta la versión 1.2.0, rebajado por decisión del titular para tener más volumen).
 6. **Coherencia del descuento:** se rechaza si supera el 90 % o si el precio de referencia es mayor de 300 €, porque indica un precio anterior falso o erróneo.
-7. **Precio comprobado según la fuente:** con la fuente `amazon` se abre la ficha `/dp/ASIN` y su precio manda. Con `chollometro` se usan el precio y el precio anterior publicados en la oferta (moderada por la comunidad) y se descartan las caducadas. Si una oferta no tiene precio anterior, no se publica, porque el 20 % no se puede comprobar.
+7. **Precio comprobado según la fuente:** con la fuente `amazon` se abre la ficha `/dp/ASIN` y su precio manda. Con `chollometro` se usan el precio y el precio anterior publicados en la oferta (moderada por la comunidad) y se descartan las caducadas. Si una oferta no tiene precio anterior, no se publica, porque el descuento no se puede comprobar.
 8. **Sin duplicados:** no se vuelve a publicar un ASIN durante `REPUBLISH_AFTER_DAYS` (7) días, salvo que su precio baje al menos otro 5 %. El historial está en `data/offers.json`.
 
 Las ofertas de cada escaneo se publican de **mayor a menor descuento**.

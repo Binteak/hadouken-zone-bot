@@ -67,7 +67,7 @@ class Settings:
     verify_product_page: bool = True
 
     # Reglas de negocio
-    min_discount_percent: int = 20
+    min_discount_percent: int = 15
     max_discount_percent: int = 90        # por encima se considera precio de referencia incoherente
     max_reference_price: float = 300.0    # un juego por encima de esto: referencia sospechosa
     include_switch_2: bool = False

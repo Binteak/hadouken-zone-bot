@@ -9,7 +9,7 @@ no necesita entrar en Amazon:
    (nextBestPrice), dominio del enlace, estado y si ha caducado.
 3. Obtiene el ASIN de la redirección de la oferta (/visit/threadmain/<id>), sin
    seguirla hasta Amazon.
-4. Aplica las reglas de negocio de rules.py (plataforma, exclusiones, ≥ 20 %…).
+4. Aplica las reglas de negocio de rules.py (plataforma, exclusiones, descuento mínimo…).
 
 El enlace que se publica es siempre el limpio de Amazon (https://www.amazon.es/dp/ASIN),
 generado en affiliate.py; nunca el de Chollometro.

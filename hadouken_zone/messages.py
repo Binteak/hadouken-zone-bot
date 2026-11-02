@@ -75,13 +75,13 @@ def offer_caption(offer: Offer, url: str, affiliate: bool = True) -> str:
     return caption
 
 
-def test_message() -> str:
+def test_message(min_discount: int = 15) -> str:
     return (
         "🎮 <b>¡Bienvenidos a HADOUKEN ZONE!</b>\n\n"
         "Aquí encontrarás las mejores ofertas de videojuegos para "
         "<b>PlayStation 5</b> y <b>Nintendo Switch</b> en Amazon.\n\n"
         "🔎 Revisamos precios durante todo el día\n"
-        "🏷️ Solo descuentos de -20% o más, comprobados\n"
+        f"🏷️ Solo descuentos de -{min_discount}% o más, comprobados\n"
         "🔔 Activa las notificaciones\n\n"
         "#HadoukenZone #PS5 #NintendoSwitch"
     )

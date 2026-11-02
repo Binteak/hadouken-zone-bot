@@ -68,3 +68,9 @@ def test_rejections(settings, kw, motivo):
 
 def test_exactly_20_percent_is_accepted(settings):
     assert rejection_reason(make(price=40.0, previous_price=50.0), settings) is None
+
+
+def test_default_minimum_is_15_percent(settings):
+    assert settings.min_discount_percent == 15
+    assert rejection_reason(make(price=42.5, previous_price=50.0), settings) is None      # 15 %
+    assert "insuficiente" in rejection_reason(make(price=43.0, previous_price=50.0), settings)  # 14 %
