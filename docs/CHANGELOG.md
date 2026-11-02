@@ -5,6 +5,7 @@
 - `.github/workflows/publicar_ofertas.yml`: ejecución diaria a las 09:07 (Europe/Madrid), estado persistente en la rama `estado`, ejecución manual en `dry_run` y registros como *artifact*.
 - `.github/workflows/tests.yml`: tests en cada push.
 - Repositorio privado `Binteak/hadouken-zone-bot`.
+- Prueba en GitHub Actions: Amazon responde 503 (bloqueo de IP de centro de datos). Workflow de publicación desactivado; los tests siguen activos.
 
 ## 1.0.0 — 2026-11-02 · Producto Hadouken Zone
 

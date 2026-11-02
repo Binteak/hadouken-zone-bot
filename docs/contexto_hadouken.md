@@ -12,7 +12,12 @@
 
 ## 2. Funcionamiento diario (requisito del producto)
 
-### Modo de producción: GitHub Actions, una vez al día (gratis)
+### ⚠️ Resultado de la prueba (2026-11-02): Amazon bloquea GitHub Actions
+
+Dos ejecuciones de prueba (`dry_run`) desde GitHub Actions recibieron **HTTP 503 (bloqueo de Amazon)** en la primera petición. Las IP de GitHub son de centro de datos y Amazon las bloquea. **El workflow `publicar_ofertas.yml` está desactivado** (`disabled_manually`) para que no publique un buenos días sin ofertas. No se intenta esquivar el bloqueo (ni proxies ni rotación de IP).
+GitHub se mantiene como repositorio del código y para los tests automáticos (`tests.yml`). El scraping de Amazon debe hacerse desde una **conexión doméstica** (PC, Android o Raspberry Pi en casa) o, en el futuro, mediante la API oficial de Amazon para afiliados.
+
+### (Desactivado) GitHub Actions, una vez al día
 
 - **Repositorio privado:** `Binteak/hadouken-zone-bot`. Workflow: `.github/workflows/publicar_ofertas.yml`.
 - **Cron:** cada día a las **09:07, hora de Madrid** (`timezone: Europe/Madrid`). Se evita la hora en punto porque es cuando GitHub más retrasa.
@@ -135,7 +140,7 @@ main.py ─► Scheduler (scheduler.py) ─► Pipeline (pipeline.py)
 2. Revisar el parser con el HTML real de Amazon tras el primer escaneo (`logs/html_debug/`).
 3. Migrar a la API oficial de Amazon para afiliados.
 4. Mostrar la hora de consulta del precio en el pie ("precio a las 10:30").
-5. Comprobar que Amazon responde desde GitHub Actions (prueba con `dry_run`). Si bloquea: volver al PC, o usar un Android o una Raspberry Pi en casa.
+5. ~~Probar GitHub Actions~~ → bloqueado por Amazon (503). Producción desde una conexión doméstica: tarea diaria de Windows en el PC, o un Android o una Raspberry Pi en casa.
 6. Resumen semanal automático ("Top 5 de la semana", la cabecera ya existe).
 7. Panel de estadísticas (ofertas publicadas y clics).
 8. Producto vendible: instalador, licencia y manual de cliente.
