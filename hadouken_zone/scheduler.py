@@ -48,17 +48,22 @@ class Scheduler:
                             minute=self.settings.good_morning_time.minute, second=0, microsecond=0)
         return now - start <= GOOD_MORNING_GRACE
 
-    def scan_due(self, now: datetime) -> bool:
+    def scan_due(self, now: datetime, ignore_interval: bool = False) -> bool:
         if not self.is_active(now):
             return False
+        if ignore_interval:          # modo cron: cada ejecución programada escanea
+            return True
         last = self.state["last_scan_at"]
         if not last:
             return True
         return now - datetime.fromisoformat(last) >= timedelta(minutes=self.settings.scan_interval_minutes)
 
     # ------------------------------------------------------------ ejecución
-    def tick(self) -> list[str]:
-        """Ejecuta lo que toque ahora. Devuelve las acciones realizadas (útil en tests)."""
+    def tick(self, ignore_interval: bool = False) -> list[str]:
+        """Ejecuta lo que toque ahora. Devuelve las acciones realizadas (útil en tests).
+
+        ignore_interval=True (modo cron): el intervalo lo marca el cron, no SCAN_INTERVAL_MINUTES.
+        """
         done = []
         now = self.clock()
         if self.good_morning_due(now):
@@ -72,7 +77,7 @@ class Scheduler:
             self.sleep(self.settings.offer_delay_seconds)
             now = self.clock()
 
-        if self.scan_due(now):
+        if self.scan_due(now, ignore_interval):
             self.state.set("last_scan_at", now.isoformat())   # el intervalo cuenta desde el inicio
             self.pipeline.run_scan()
             done.append("scan")

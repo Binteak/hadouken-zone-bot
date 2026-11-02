@@ -1,12 +1,15 @@
-"""Búsqueda de ofertas en Amazon: recorre las búsquedas configuradas y verifica en la ficha."""
+"""Fuente "amazon": busca en Amazon.es y verifica cada oferta en su ficha.
+
+Necesita una conexión doméstica (Amazon bloquea las IP de centros de datos, como GitHub Actions).
+"""
 
 from __future__ import annotations
 
 import logging
 
-from ..config import Settings
-from ..models import Offer
-from ..rules import rejection_reason
+from ...config import Settings
+from ...models import Offer
+from ...rules import rejection_reason
 from .client import AmazonClient
 from .parser import parse_product_page, parse_search_results
 
@@ -14,6 +17,8 @@ log = logging.getLogger(__name__)
 
 
 class AmazonScraper:
+    name = "amazon"
+
     def __init__(self, settings: Settings, client: AmazonClient | None = None):
         self.settings = settings
         self.client = client or AmazonClient(settings.amazon_domain, settings.request_delay_seconds)

@@ -33,6 +33,12 @@ SEARCHES = (
 )
 
 
+CHOLLOMETRO_FEEDS = (
+    "https://www.chollometro.com/rss/nuevos",
+    "https://www.chollometro.com/rss/hot",
+)
+
+
 def _parse_time(value: str) -> time:
     hours, minutes = value.strip().split(":")
     return time(int(hours), int(minutes))
@@ -48,6 +54,10 @@ class Settings:
     telegram_bot_token: str = ""
     telegram_chat_id: str = ""
     dry_run: bool = True
+
+    # Fuentes de ofertas, en orden de prioridad (ver hadouken_zone/sources/)
+    offer_sources: tuple = ("chollometro",)
+    chollometro_feeds: tuple = field(default=CHOLLOMETRO_FEEDS)
 
     # Amazon
     amazon_domain: str = "www.amazon.es"
@@ -84,6 +94,7 @@ class Settings:
             telegram_bot_token=g("TELEGRAM_BOT_TOKEN", "") or "",
             telegram_chat_id=g("TELEGRAM_CHAT_ID", "") or "",
             dry_run=_bool(g("DRY_RUN", "true")),
+            offer_sources=tuple(x.strip().lower() for x in (g("OFFER_SOURCES", "chollometro") or "chollometro").split(",") if x.strip()),
             amazon_domain=g("AMAZON_DOMAIN", d.amazon_domain),
             amazon_partner_tag=(g("AMAZON_PARTNER_TAG", "") or "").strip(),
             request_delay_seconds=float(g("REQUEST_DELAY_SECONDS", d.request_delay_seconds)),

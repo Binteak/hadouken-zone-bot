@@ -82,3 +82,12 @@ def test_pipeline_knows_when_to_stop(settings, tmp_path):
     assert pipe.still_active() is True
     clock.now = datetime(2026, 11, 2, 23, 31, tzinfo=TZ)
     assert pipe.still_active() is False
+
+
+def test_cron_mode_scans_on_every_run(settings, tmp_path):
+    sched, pipe, clock = build(settings, tmp_path, datetime(2026, 11, 2, 9, 7, tzinfo=TZ))
+    assert sched.tick(ignore_interval=True) == ["good_morning", "scan"]
+    clock.now += timedelta(minutes=29)             # el cron se adelanta/retrasa un poco
+    assert sched.tick(ignore_interval=True) == ["scan"]
+    clock.now = datetime(2026, 11, 2, 23, 37, tzinfo=TZ)
+    assert sched.tick(ignore_interval=True) == []  # fuera de horario

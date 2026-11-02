@@ -1,4 +1,4 @@
-"""Fuente de ofertas: Amazon.es (búsqueda + verificación en la ficha de producto)."""
+"""Fuente "amazon": Amazon.es (búsqueda + verificación en la ficha de producto)."""
 
 from .client import AmazonClient, CaptchaError
 from .scraper import AmazonScraper

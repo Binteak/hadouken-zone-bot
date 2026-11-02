@@ -36,7 +36,8 @@ def main() -> int:
     setup_logging()
     log = logging.getLogger("hadouken_zone")
     settings = Settings.from_env()
-    log.info("HADOUKEN ZONE v%s | DRY_RUN=%s", __version__, settings.dry_run)
+    log.info("HADOUKEN ZONE v%s | DRY_RUN=%s | fuentes: %s", __version__, settings.dry_run,
+             ", ".join(settings.offer_sources))
 
     telegram = TelegramClient(settings.telegram_bot_token, settings.telegram_chat_id, settings.dry_run)
 
@@ -56,7 +57,7 @@ def main() -> int:
         return 0
 
     if args.ciclo:
-        done = Scheduler(settings, pipeline).tick()
+        done = Scheduler(settings, pipeline).tick(ignore_interval=True)
         log.info("Pasada terminada: %s", ", ".join(done) or "nada que hacer en este horario")
         return 0
 

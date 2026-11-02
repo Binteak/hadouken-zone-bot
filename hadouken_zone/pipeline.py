@@ -10,10 +10,10 @@ import requests
 
 from . import messages
 from .affiliate import product_url
-from .amazon import AmazonScraper, CaptchaError
 from .cards import generar_tarjeta
 from .config import CARDS_DIR, GOOD_MORNING_IMAGE, Settings
 from .models import Offer
+from .sources import OfferSource, SourceBlocked, build_sources
 from .storage import OfferStore
 from .telegram import TelegramClient, TelegramError
 
@@ -21,11 +21,11 @@ log = logging.getLogger(__name__)
 
 
 class Pipeline:
-    def __init__(self, settings: Settings, telegram: TelegramClient, scraper: AmazonScraper | None = None,
+    def __init__(self, settings: Settings, telegram: TelegramClient, sources: list[OfferSource] | None = None,
                  store: OfferStore | None = None, sleep=time.sleep, still_active=lambda: True):
         self.settings = settings
         self.telegram = telegram
-        self.scraper = scraper or AmazonScraper(settings)
+        self.sources = sources if sources is not None else build_sources(settings)
         self.store = store or OfferStore()
         self.sleep = sleep
         self.still_active = still_active     # el planificador indica si seguimos en horario
@@ -65,21 +65,33 @@ class Pipeline:
         if not s.dry_run:
             self.store.mark_published(offer, url)
 
+    def collect_offers(self) -> list[Offer]:
+        """Ofertas nuevas de todas las fuentes, sin repetir ASIN, de mayor a menor descuento."""
+        limit = self.settings.max_offers_per_cycle
+        found: dict[str, Offer] = {}
+        for source in self.sources:
+            try:
+                offers = source.find_offers(limit, self._is_new)
+            except SourceBlocked as exc:
+                log.warning("Fuente %s bloqueada: %s. Se reintentará en el próximo escaneo.", source.name, exc)
+                continue
+            except requests.RequestException as exc:
+                log.warning("No se pudo conectar con la fuente %s (%s). Se reintentará en el próximo escaneo.",
+                            source.name, exc.__class__.__name__)
+                continue
+            except Exception:
+                log.exception("Error en la fuente %s", source.name)
+                continue
+            log.info("Fuente %s: %s ofertas válidas", source.name, len(offers))
+            for offer in offers:
+                found.setdefault(offer.asin, offer)
+        offers = sorted(found.values(), key=lambda o: o.discount_percent or 0, reverse=True)
+        return offers[:limit]
+
     def run_scan(self) -> int:
         """Un ciclo completo. Devuelve cuántas ofertas se han publicado."""
         started = datetime.now()
-        try:
-            offers = self.scraper.find_offers(self.settings.max_offers_per_cycle, self._is_new)
-        except CaptchaError as exc:
-            log.warning("%s. Se reintentará en el próximo escaneo.", exc)
-            return 0
-        except requests.RequestException as exc:
-            log.warning("No se pudo conectar con Amazon (%s). Se reintentará en el próximo escaneo.",
-                        exc.__class__.__name__)
-            return 0
-        except Exception:
-            log.exception("Error buscando ofertas")
-            return 0
+        offers = self.collect_offers()
 
         log.info("Ofertas nuevas para publicar: %s", len(offers))
         published = 0

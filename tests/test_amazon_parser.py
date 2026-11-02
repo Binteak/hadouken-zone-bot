@@ -1,6 +1,6 @@
 import pytest
 
-from hadouken_zone.amazon.parser import (
+from hadouken_zone.sources.amazon.parser import (
     is_captcha,
     parse_price,
     parse_product_page,

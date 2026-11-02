@@ -15,7 +15,8 @@ from urllib.parse import urlencode
 
 import requests
 
-from ..config import DEBUG_DIR
+from ...config import DEBUG_DIR
+from ..base import SourceBlocked
 from .parser import is_captcha
 
 log = logging.getLogger(__name__)
@@ -30,7 +31,7 @@ HEADERS = {
 }
 
 
-class CaptchaError(RuntimeError):
+class CaptchaError(SourceBlocked):
     """Amazon ha pedido verificación humana: hay que parar y esperar."""
 
 

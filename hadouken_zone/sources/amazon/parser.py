@@ -11,7 +11,7 @@ import re
 
 from bs4 import BeautifulSoup
 
-from ..models import Offer
+from ...models import Offer
 
 CAPTCHA_MARKERS = ("validatecaptcha", "captcha", "robot check", "introduce los caracteres")
 

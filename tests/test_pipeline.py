@@ -3,8 +3,7 @@ from datetime import date
 
 import pytest
 
-from hadouken_zone.amazon import AmazonScraper, CaptchaError
-from hadouken_zone.amazon.parser import parse_search_results
+from hadouken_zone.sources.amazon import AmazonScraper, CaptchaError
 from hadouken_zone.models import Offer
 from hadouken_zone.pipeline import Pipeline
 from hadouken_zone.storage import OfferStore
@@ -64,7 +63,7 @@ def test_scraper_respects_limit_and_dedup(one_search, html):
 def test_run_scan_publishes_with_delay_between_offers(one_search, html, fake_telegram, tmp_path):
     settings = replace(one_search, dry_run=False)
     sleeps = []
-    pipe = Pipeline(settings, fake_telegram, AmazonScraper(settings, FakeClient(html)),
+    pipe = Pipeline(settings, fake_telegram, [AmazonScraper(settings, FakeClient(html))],
                     OfferStore(tmp_path / "offers.json"), sleep=sleeps.append)
     published = pipe.run_scan()
 
@@ -80,14 +79,14 @@ def test_run_scan_publishes_with_delay_between_offers(one_search, html, fake_tel
 
 def test_dry_run_does_not_mark_published(one_search, html, fake_telegram, tmp_path):
     store = OfferStore(tmp_path / "offers.json")
-    pipe = Pipeline(one_search, fake_telegram, AmazonScraper(one_search, FakeClient(html)), store,
+    pipe = Pipeline(one_search, fake_telegram, [AmazonScraper(one_search, FakeClient(html))], store,
                     sleep=lambda s: None)
     pipe.run_scan()
     assert store.data["offers"] == {}
 
 
 def test_captcha_stops_cycle_without_crashing(one_search, html, fake_telegram, tmp_path):
-    pipe = Pipeline(one_search, fake_telegram, AmazonScraper(one_search, FakeClient(html, captcha=True)),
+    pipe = Pipeline(one_search, fake_telegram, [AmazonScraper(one_search, FakeClient(html, captcha=True))],
                     OfferStore(tmp_path / "offers.json"), sleep=lambda s: None)
     assert pipe.run_scan() == 0
     assert fake_telegram.sent == []
@@ -100,13 +99,13 @@ def test_stops_publishing_outside_active_hours(one_search, html, fake_telegram, 
         calls["n"] += 1
         return calls["n"] <= 1                     # solo deja publicar la primera
 
-    pipe = Pipeline(one_search, fake_telegram, AmazonScraper(one_search, FakeClient(html)),
+    pipe = Pipeline(one_search, fake_telegram, [AmazonScraper(one_search, FakeClient(html))],
                     OfferStore(tmp_path / "offers.json"), sleep=lambda s: None, still_active=still_active)
     assert pipe.run_scan() == 1
 
 
 def test_good_morning_sends_image(one_search, fake_telegram, tmp_path):
-    pipe = Pipeline(one_search, fake_telegram, scraper=object(), store=OfferStore(tmp_path / "o.json"))
+    pipe = Pipeline(one_search, fake_telegram, sources=[], store=OfferStore(tmp_path / "o.json"))
     pipe.send_good_morning(date(2026, 11, 2))
     kind, name, caption = fake_telegram.sent[0]
     assert kind == "photo" and name == "cabecera_buenos_dias.png"

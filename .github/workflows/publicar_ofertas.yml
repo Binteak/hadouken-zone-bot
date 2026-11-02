@@ -1,8 +1,10 @@
-# Hadouken Zone - publicación diaria en Telegram (GitHub Actions)
+# Hadouken Zone - publicación automática en Telegram (GitHub Actions)
 #
-# Cada día a las 09:07 (hora de Madrid) ejecuta una pasada del bot:
-#   1) mensaje de buenos días con imagen
-#   2) escaneo de Amazon y publicación de todas las ofertas nuevas (60 s entre ofertas)
+# Cada 30 minutos entre las 09:07 y las 23:07 (hora de Madrid) ejecuta una pasada del bot
+# (python main.py --ciclo):
+#   - 09:07: mensaje de buenos días con imagen
+#   - cada pasada: busca ofertas nuevas en las fuentes (OFFER_SOURCES, por defecto Chollometro)
+#     y publica todas las válidas, con 60 s entre ofertas
 #
 # El historial de ofertas publicadas y el estado se guardan en la rama "estado",
 # para no repetir ofertas ni el buenos días entre ejecuciones.
@@ -16,7 +18,9 @@ name: Publicar ofertas
 
 on:
   schedule:
-    - cron: "7 9 * * *"
+    - cron: "7,37 9-22 * * *"
+      timezone: "Europe/Madrid"
+    - cron: "7 23 * * *"
       timezone: "Europe/Madrid"
   workflow_dispatch:
     inputs:
@@ -44,6 +48,7 @@ jobs:
       # Afiliación desactivada hasta nuevo aviso (ver docs/contexto_hadouken.md)
       AMAZON_PARTNER_TAG: ""
       TIMEZONE: Europe/Madrid
+      OFFER_SOURCES: chollometro
       PYTHONUTF8: "1"
     steps:
       - name: Descargar el código
