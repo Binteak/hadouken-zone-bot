@@ -9,7 +9,7 @@ Uso desde Python:
     from hadouken_zone.cards import generar_tarjeta
     ruta = generar_tarjeta(
         titulo="Nombre del juego",
-        plataforma="PS5",               # "PS5", "Nintendo Switch", "Xbox", "Switch 2"...
+        plataforma="PS5",               # "PS5", "PS4", "Nintendo Switch", "Nintendo Switch 2", "Xbox"
         precio_actual=29.99,
         precio_anterior=69.99,
         imagen="https://...jpg",        # URL, ruta local o bytes (opcional)
@@ -46,15 +46,20 @@ YELLOW = (255, 214, 64)
 WHITE = (255, 255, 255)
 LILAC = (190, 180, 225)
 
+# clave -> (texto de la etiqueta, color de fondo, color del texto)
+PS_BLUE = (0, 112, 224)
+SWITCH_RED = (228, 0, 20)
+XBOX_GREEN = (16, 124, 16)
 PLATAFORMAS = {
-    "ps5": ("PS5", (0, 112, 224)),
-    "playstation 5": ("PS5", (0, 112, 224)),
-    "ps4": ("PS4", (0, 82, 180)),
-    "switch 2": ("SWITCH 2", (228, 0, 20)),
-    "nintendo switch 2": ("SWITCH 2", (228, 0, 20)),
-    "switch": ("SWITCH", (228, 0, 20)),
-    "nintendo switch": ("SWITCH", (228, 0, 20)),
-    "xbox": ("XBOX", (16, 124, 16)),
+    "ps5": ("PS5", WHITE, INK),
+    "playstation 5": ("PS5", WHITE, INK),
+    "ps4": ("PS4", PS_BLUE, WHITE),
+    "playstation 4": ("PS4", PS_BLUE, WHITE),
+    "switch 2": ("SWITCH 2", SWITCH_RED, WHITE),
+    "nintendo switch 2": ("SWITCH 2", SWITCH_RED, WHITE),
+    "switch": ("SWITCH", SWITCH_RED, WHITE),
+    "nintendo switch": ("SWITCH", SWITCH_RED, WHITE),
+    "xbox": ("XBOX", XBOX_GREEN, WHITE),
 }
 
 
@@ -193,6 +198,31 @@ def _ajustar_titulo(titulo, ancho, max_lineas=3):
     return f, lineas, size
 
 
+# ---------------------------------------------------------------- etiqueta de plataforma
+def _etiqueta_plataforma(d: ImageDraw.ImageDraw, x: int, y: int, nombre: str, fondo, tinta) -> int:
+    """Dibuja la píldora de plataforma y devuelve su ancho.
+
+    En "SWITCH 2" el 2 va en un círculo blanco con el número en rojo, más grande,
+    para que se distinga a primera vista de la Switch original.
+    """
+    f = F_FUERTE(30)
+    numero = None
+    if nombre.endswith(" 2"):
+        nombre, numero = nombre[:-2], "2"
+    wtxt = int(f.getlength(nombre))
+    wpl = wtxt + 56 + (52 if numero else 0)
+    d.rounded_rectangle((x - 5, y - 5, x + wpl + 5, y + 57), 32, fill=INK)
+    d.rounded_rectangle((x, y, x + wpl, y + 52), 28, fill=fondo)
+    if numero:
+        d.text((x + 28, y + 27), nombre, font=f, fill=tinta, anchor="lm")
+        cx, cy, r = x + wpl - 30, y + 26, 20
+        d.ellipse((cx - r, cy - r, cx + r, cy + r), fill=WHITE)
+        d.text((cx, cy + 1), numero, font=F_FUERTE(34), fill=fondo, anchor="mm")
+    else:
+        d.text((x + wpl / 2, y + 27), nombre, font=f, fill=tinta, anchor="mm")
+    return wpl
+
+
 # ---------------------------------------------------------------- tarjeta
 def generar_tarjeta(titulo: str, plataforma: str, precio_actual: float,
                     precio_anterior: float | None = None, descuento: int | None = None,
@@ -237,14 +267,11 @@ def generar_tarjeta(titulo: str, plataforma: str, precio_actual: float,
     ancho = W - x - 60
     d = ImageDraw.Draw(img)
     clave = (plataforma or "").strip().lower()
-    nombre_plat, color_plat = PLATAFORMAS.get(clave, ((plataforma or "").upper(), (90, 90, 140)))
+    nombre_plat, color_plat, tinta_plat = PLATAFORMAS.get(
+        clave, ((plataforma or "").upper(), (90, 90, 140), WHITE))
     y = 82
     if nombre_plat:
-        f = F_FUERTE(30)
-        wpl = int(f.getlength(nombre_plat)) + 56
-        d.rounded_rectangle((x - 5, y - 5, x + wpl + 5, y + 57), 32, fill=INK)
-        d.rounded_rectangle((x, y, x + wpl, y + 52), 28, fill=color_plat)
-        d.text((x + wpl / 2, y + 27), nombre_plat, font=f, fill=WHITE, anchor="mm")
+        wpl = _etiqueta_plataforma(d, x, y, nombre_plat, color_plat, tinta_plat)
     if etiqueta:
         f = F_FUERTE(26)
         xe = x + (wpl + 24 if nombre_plat else 0)
@@ -288,7 +315,7 @@ def generar_tarjeta(titulo: str, plataforma: str, precio_actual: float,
         img.alpha_composite(h, (W - h.width - 28, H - 92))
     d.text((80, H - 35), "HADOUKEN ZONE", font=F_TITULAR(34), fill=WHITE, anchor="lm")
     d.text((80 + F_TITULAR(34).getlength("HADOUKEN ZONE") + 24, H - 35),
-           "Ofertas verificadas de PS5, Switch y Xbox", font=F_TEXTO(24), fill=LILAC, anchor="lm")
+           "Ofertas verificadas de PlayStation, Switch y Xbox", font=F_TEXTO(24), fill=LILAC, anchor="lm")
 
     Path(salida).parent.mkdir(parents=True, exist_ok=True)
     out = img.convert("RGB")

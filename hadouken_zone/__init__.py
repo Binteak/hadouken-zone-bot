@@ -1,3 +1,3 @@
-"""Hadouken Zone: bot de Telegram con ofertas de videojuegos de PS5, Nintendo Switch y Xbox en Amazon."""
+"""Hadouken Zone: bot de Telegram con ofertas de videojuegos de PS5, PS4, Nintendo Switch, Switch 2 y Xbox en Amazon."""
 
-__version__ = "1.3.0"
+__version__ = "1.4.0"

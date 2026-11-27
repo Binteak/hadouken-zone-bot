@@ -66,6 +66,12 @@ def test_offer_caption_xbox_hashtag():
     assert "#Xbox" in messages.offer_caption(offer, "https://www.amazon.es/dp/B0TSTXB001")
 
 
+@pytest.mark.parametrize("platform, tag", [("PS4", "#PS4"), ("Nintendo Switch 2", "#NintendoSwitch2")])
+def test_offer_caption_new_platform_hashtags(platform, tag):
+    offer = Offer(asin="B0TSTNEW01", title="Juego", price=20, previous_price=40, platform=platform)
+    assert tag in messages.offer_caption(offer, "https://www.amazon.es/dp/B0TSTNEW01")
+
+
 def test_caption_stays_under_telegram_limit():
     offer = Offer(asin="B0TSTSW001", title="X" * 2000, price=30, previous_price=50, platform="PS5")
     assert len(messages.offer_caption(offer, "https://a.es")) <= 1024

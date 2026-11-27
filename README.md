@@ -1,6 +1,6 @@
 # Hadouken Zone
 
-**Bot de Telegram que publica automáticamente ofertas de videojuegos de PS5, Nintendo Switch y Xbox en Amazon.es**, con un descuento mínimo del 15 %, precio comprobado, tarjeta visual de cada oferta y enlace de afiliado.
+**Bot de Telegram que publica automáticamente ofertas de videojuegos de PS5, PS4, Nintendo Switch, Switch 2 y Xbox en Amazon.es**, con un descuento mínimo del 15 %, precio comprobado, tarjeta visual de cada oferta y enlace de afiliado.
 
 ## Qué hace cada día
 
@@ -127,7 +127,8 @@ Los tests no acceden a internet: el HTML de Amazon y la API de Telegram están s
 | `MIN_DISCOUNT_PERCENT` | `15` | Descuento mínimo |
 | `REPUBLISH_AFTER_DAYS` | `7` | No repetir un producto antes de N días (salvo si baja otro 5 %) |
 | `OFFER_SOURCES` | `chollometro` | Fuentes de ofertas, separadas por comas |
-| `INCLUDE_SWITCH_2` | `false` | Incluir juegos de Switch 2 |
+| `INCLUDE_SWITCH_2` | `true` | Incluir juegos de Switch 2 |
+| `INCLUDE_PS4` | `true` | Incluir juegos de PS4 |
 | `INCLUDE_XBOX` | `true` | Incluir juegos de Xbox (Series X\|S y Xbox One) |
 | `REQUEST_DELAY_SECONDS` / `SCRAPE_PAGES` | `4` / `2` | Prudencia al consultar Amazon |
 | `VERIFY_PRODUCT_PAGE` | `true` | Confirmar precios en la ficha antes de publicar |

@@ -46,9 +46,9 @@ def test_scraper_finds_only_valid_offers(one_search, html):
     scraper = AmazonScraper(one_search, FakeClient(html))
     offers = scraper.find_offers(limit=10, is_new=lambda o: True)
     asins = {o.asin for o in offers}
-    # Válidas: GoW (-45 %), Mario Kart (-30 %), Astro Bot (-43 %).
-    # Fuera: Switch 2, mando DualSense, FC 26 (-10 %), sin precio.
-    assert asins == {"B0TSTPS501", "B0TSTSW001", "B0TSTPS503"}
+    # Válidas: GoW (-45 %), Mario Kart (-30 %), Astro Bot (-43 %) y Mario Kart World Switch 2 (-40 %).
+    # Fuera: mando DualSense, FC 26 (-10 %), sin precio.
+    assert asins == {"B0TSTPS501", "B0TSTSW001", "B0TSTPS503", "B0TSTSW201"}
     assert all(o.verified for o in offers)
     # ordenadas de mayor a menor descuento tras la búsqueda
     assert offers[0].asin == "B0TSTPS501"
@@ -67,9 +67,9 @@ def test_run_scan_publishes_with_delay_between_offers(one_search, html, fake_tel
                     OfferStore(tmp_path / "offers.json"), sleep=sleeps.append)
     published = pipe.run_scan()
 
-    assert published == 3
-    assert [s[0] for s in fake_telegram.sent] == ["photo"] * 3
-    assert sleeps == [60, 60]                      # 1 minuto entre ofertas, no tras la última
+    assert published == 4
+    assert [s[0] for s in fake_telegram.sent] == ["photo"] * 4
+    assert sleeps == [60, 60, 60]                      # 1 minuto entre ofertas, no tras la última
     assert "tag=hadouken-21" in fake_telegram.sent[0][2]
 
     # segunda pasada: ya publicadas, no se repiten

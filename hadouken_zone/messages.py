@@ -11,7 +11,8 @@ DIAS = ["lunes", "martes", "miércoles", "jueves", "viernes", "sábado", "doming
 MESES = ["enero", "febrero", "marzo", "abril", "mayo", "junio", "julio", "agosto",
          "septiembre", "octubre", "noviembre", "diciembre"]
 
-PLATFORM_TAGS = {"PS5": "#PS5", "Nintendo Switch": "#NintendoSwitch", "Xbox": "#Xbox"}
+PLATFORM_TAGS = {"PS5": "#PS5", "PS4": "#PS4", "Nintendo Switch": "#NintendoSwitch",
+                 "Nintendo Switch 2": "#NintendoSwitch2", "Xbox": "#Xbox"}
 
 AFFILIATE_NOTICE = "Como afiliado de Amazon, obtengo ingresos por las compras adscritas que cumplen los requisitos aplicables."
 
@@ -40,7 +41,7 @@ def good_morning_message(d: date, scan_minutes: int = 30, min_discount: int = 20
     lines = [
         opening,
         "",
-        f"Hoy es {fecha_larga(d)} y arrancamos la caza de ofertas de <b>PS5</b>, <b>Nintendo Switch</b> y <b>Xbox</b>. 🕹️",
+        f"Hoy es {fecha_larga(d)} y arrancamos la caza de ofertas de <b>PS5</b>, <b>PS4</b>, <b>Switch</b>, <b>Switch 2</b> y <b>Xbox</b>. 🕹️",
         "",
         f"🔎 Revisamos Amazon cada <b>{scan_minutes} minutos</b>",
         f"🏷️ Solo descuentos de <b>-{min_discount}% o más</b>, con precio comprobado",
@@ -48,7 +49,7 @@ def good_morning_message(d: date, scan_minutes: int = 30, min_discount: int = 20
         "",
         "¡Vamos con las ofertas! 👇",
         "",
-        "#HadoukenZone #PS5 #NintendoSwitch #Xbox",
+        "#HadoukenZone #PS5 #PS4 #NintendoSwitch #NintendoSwitch2 #Xbox",
     ]
     if affiliate:
         lines += ["", f"<i>{AFFILIATE_NOTICE}</i>"]
@@ -81,9 +82,9 @@ def test_message(min_discount: int = 15) -> str:
     return (
         "🎮 <b>¡Bienvenidos a HADOUKEN ZONE!</b>\n\n"
         "Aquí encontrarás las mejores ofertas de videojuegos para "
-        "<b>PlayStation 5</b>, <b>Nintendo Switch</b> y <b>Xbox</b> en Amazon.\n\n"
+        "<b>PS5</b>, <b>PS4</b>, <b>Nintendo Switch</b>, <b>Switch 2</b> y <b>Xbox</b> en Amazon.\n\n"
         "🔎 Revisamos precios durante todo el día\n"
         f"🏷️ Solo descuentos de -{min_discount}% o más, comprobados\n"
         "🔔 Activa las notificaciones\n\n"
-        "#HadoukenZone #PS5 #NintendoSwitch #Xbox"
+        "#HadoukenZone #PS5 #PS4 #NintendoSwitch #NintendoSwitch2 #Xbox"
     )

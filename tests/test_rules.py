@@ -9,9 +9,13 @@ from hadouken_zone.rules import detect_platform, is_excluded, rejection_reason
     ("Astro Bot - PlayStation 5", "PS5"),
     ("Mario Kart 8 Deluxe (Nintendo Switch)", "Nintendo Switch"),
     ("Zelda Tears of the Kingdom Switch", "Nintendo Switch"),
-    ("Mario Kart World (Nintendo Switch 2)", None),
+    ("Mario Kart World (Nintendo Switch 2)", "Nintendo Switch 2"),
+    ("Donkey Kong Bananza - Switch2", "Nintendo Switch 2"),
     ("Hogwarts Legacy PS5 / Nintendo Switch", None),
-    ("FIFA PS4", None),
+    ("FIFA PS4", "PS4"),
+    ("The Last of Us Parte II - PlayStation 4", "PS4"),
+    ("Ghost of Tsushima PS4/PS5", "PS5"),
+    ("Hogwarts Legacy PS4 / Xbox One", None),
     ("Halo Infinite Xbox Series X", "Xbox"),
     ("Forza Horizon 5 (Xbox One)", "Xbox"),
     ("EA FC 26 PS5 / Xbox Series X", None),
@@ -24,8 +28,13 @@ def test_xbox_can_be_disabled():
     assert detect_platform("Halo Infinite Xbox Series X", include_xbox=False) is None
 
 
-def test_switch_2_can_be_enabled():
-    assert detect_platform("Mario Kart World Nintendo Switch 2", include_switch_2=True) == "Nintendo Switch"
+def test_switch_2_can_be_disabled():
+    assert detect_platform("Mario Kart World Nintendo Switch 2", include_switch_2=False) is None
+
+
+def test_ps4_can_be_disabled():
+    assert detect_platform("FIFA PS4", include_ps4=False) is None
+    assert detect_platform("Ghost of Tsushima PS4/PS5", include_ps4=False) == "PS5"
 
 
 @pytest.mark.parametrize("title, excluded", [

@@ -26,8 +26,9 @@ Guía de marca y recursos gráficos del canal de Telegram.
 | Naranja | `#FF8024` | Energía del hadouken, sombras de texto |
 | Amarillo | `#FFD640` | Precios, estrellas de descuento, rayos |
 | Rojo | `#E8362E` | Avisos (Agotado) |
-| Azul PS5 | `#0070E0` | Etiqueta de plataforma PS5 |
-| Rojo Switch | `#E40014` | Etiqueta de plataforma Switch |
+| Blanco PS5 | `#FFFFFF` (texto `#161028`) | Etiqueta de plataforma PS5 |
+| Azul PS4 | `#0070E0` | Etiqueta de plataforma PS4 |
+| Rojo Switch | `#E40014` | Etiquetas de Switch y Switch 2 (en Switch 2, el «2» va en un círculo blanco con el número en rojo) |
 | Verde Xbox | `#107C10` | Etiqueta de plataforma Xbox |
 
 ## Tipografía
@@ -38,7 +39,7 @@ Guía de marca y recursos gráficos del canal de Telegram.
 ## Reglas básicas
 
 - La mascota siempre con su contorno cian, sobre fondo morado o transparente.
-- No usar logotipos oficiales de PlayStation ni Nintendo: las plataformas se indican con etiquetas de texto (PS5 / SWITCH).
+- No usar logotipos oficiales de PlayStation ni Nintendo: las plataformas se indican con etiquetas de texto (PS5 / PS4 / SWITCH / SWITCH 2 / XBOX).
 - Formatos: publicaciones 1280×720, avatar 640×640, stickers 512×512.
 
 ## Regenerar los diseños

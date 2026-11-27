@@ -1,5 +1,12 @@
 # Registro de cambios
 
+## 1.4.0 — 2026-11-27 · PS4, Switch 2 y nuevos colores de plataforma
+- **PS4** como plataforma nueva (`INCLUDE_PS4`, activa por defecto), con etiqueta **azul** y hashtag `#PS4`. «PS4/PS5» se publica como PS5.
+- **Switch 2** activada por defecto (`INCLUDE_SWITCH_2=true`) como plataforma propia: etiqueta roja con el **«2» en un círculo blanco** para distinguirla de la Switch, y hashtag `#NintendoSwitch2`.
+- **PS5** pasa a etiqueta **blanca** con texto oscuro.
+- Xbox sigue como una sola plataforma (Series X|S y Xbox One).
+- Textos del canal, guía de marca y búsquedas de la fuente `amazon` actualizados. 120 tests.
+
 ## 1.3.0 — 2026-11-27 · Xbox y disparador cada 5 minutos
 - **Xbox**: se publican juegos de Xbox Series X|S y Xbox One (`INCLUDE_XBOX`, activo por defecto). Etiqueta verde `XBOX` en la tarjeta (`#107C10`), hashtag `#Xbox` y textos del canal actualizados. Game Pass y Xbox Live se excluyen como suscripciones. Un título con más de una plataforma sigue descartándose.
 - **Producción cada 5 minutos con cron-job.org** (`workflow_dispatch` por la API de GitHub). Diagnóstico: el `schedule` de GitHub solo lanzaba 3-4 pasadas al día y el RSS de "nuevos" de Chollometro solo cubre las 30 últimas ofertas (minutos en horas punta), así que no salía casi nada. El `schedule` queda como respaldo.

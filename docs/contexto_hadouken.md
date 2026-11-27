@@ -1,11 +1,11 @@
 # Contexto del proyecto: Hadouken Zone
 
 > Documento maestro del proyecto. Es la referencia para cualquier persona o asistente (Claude) que trabaje en él.
-> Última actualización: 2026-11-27 · versión 1.3.0
+> Última actualización: 2026-11-27 · versión 1.4.0
 
 ## 1. Qué es
 
-**Hadouken Zone** es un producto de software: un bot de Telegram que encuentra ofertas de videojuegos de **PlayStation 5**, **Nintendo Switch** y **Xbox** en **Amazon.es** y las publica automáticamente en un canal de Telegram con enlace de afiliado.
+**Hadouken Zone** es un producto de software: un bot de Telegram que encuentra ofertas de videojuegos de **PS5**, **PS4**, **Nintendo Switch**, **Switch 2** y **Xbox** en **Amazon.es** y las publica automáticamente en un canal de Telegram con enlace de afiliado.
 
 - **Objetivo de negocio:** generar comisiones de Amazon Afiliados con un canal de ofertas fiable y atractivo.
 - **Objetivo de producto:** que sea un proyecto profesional que se pueda **vender en el futuro**: código limpio y probado, documentación completa, branding propio y configuración por `.env`, sin valores fijos de un cliente concreto.
@@ -37,7 +37,7 @@ El bot no depende de una sola web. Cada fuente implementa `find_offers(limit, is
 
 | Fuente | Estado | Cómo obtiene la oferta |
 |---|---|---|
-| `chollometro` | **Activa en producción** | Recorre los RSS `nuevos` y `hot` y se queda con las ofertas cuya tienda es **Amazon**. Descarta antes las que no son juegos de PS5, Switch o Xbox, según el título. De la página de cada oferta lee el objeto JSON de la oferta principal (`threadId`): `price`, `nextBestPrice` (precio anterior), `linkHost`, `status` y si ha caducado. El **ASIN** sale de la redirección `/visit/threadmain/<id>` (`Location` con `amazon.es/dp/ASIN`), sin entrar en Amazon. El título se limpia de precios y cupones. |
+| `chollometro` | **Activa en producción** | Recorre los RSS `nuevos` y `hot` y se queda con las ofertas cuya tienda es **Amazon**. Descarta antes las que no son juegos de las plataformas admitidas, según el título. De la página de cada oferta lee el objeto JSON de la oferta principal (`threadId`): `price`, `nextBestPrice` (precio anterior), `linkHost`, `status` y si ha caducado. El **ASIN** sale de la redirección `/visit/threadmain/<id>` (`Location` con `amazon.es/dp/ASIN`), sin entrar en Amazon. El título se limpia de precios y cupones. |
 | `amazon` | Disponible (solo en casa) | Búsqueda en Amazon.es y verificación del precio en la ficha del producto. |
 
 **Futuras fuentes** (añadir un módulo en `sources/` y registrarlo en `REGISTRY`): otras webs de chollos, la API oficial de Amazon para afiliados (cuando se active la afiliación) o la fuente `amazon` desde un equipo en casa.
@@ -46,7 +46,7 @@ El bot no depende de una sola web. Cada fuente implementa `find_offers(limit, is
 
 Una oferta solo se publica si cumple **todas** estas condiciones (`hadouken_zone/rules.py`):
 
-1. Es un **videojuego** de **PS5**, **Nintendo Switch** o **Xbox** (Series X|S y Xbox One; desactivable con `INCLUDE_XBOX=false`). La plataforma se detecta en el título o en la ficha. Se descartan Switch 2 (configurable con `INCLUDE_SWITCH_2`), los títulos que mencionan más de una plataforma, PS4 y PC.
+1. Es un **videojuego** de **PS5**, **PS4**, **Nintendo Switch**, **Switch 2** o **Xbox** (una sola plataforma «Xbox» para Series X|S y Xbox One; más adelante se podrán diferenciar). Cada una se puede desactivar: `INCLUDE_PS4`, `INCLUDE_SWITCH_2`, `INCLUDE_XBOX`. La plataforma se detecta en el título o en la ficha. «PS4/PS5» cuenta como PS5. Se descartan los títulos que mencionan otras combinaciones de plataformas (p. ej. «PS5 / Xbox») y PC.
 2. **No es un accesorio ni hardware**: mandos, auriculares, consolas, cargadores, fundas, amiibo, tarjetas regalo, suscripciones (PS Plus, Switch Online, Game Pass)…
 3. Está **disponible**.
 4. Tiene **precio actual y precio anterior válidos**, y el actual es menor que el anterior.
@@ -67,7 +67,7 @@ Las ofertas de cada escaneo se publican de **mayor a menor descuento**.
 
 ## 5. Formato de las publicaciones
 
-- **Oferta:** foto con la tarjeta 1280x720 (`cards.py`: carátula, etiqueta de plataforma, estrella con el %, precio anterior tachado, precio actual y ahorro) y un pie en HTML: título, plataforma, precios, ahorro, enlace "Ver oferta en Amazon" y hashtags. Si falla la imagen, se envía solo el texto.
+- **Oferta:** foto con la tarjeta 1280x720 (`cards.py`: carátula, etiqueta de plataforma —PS5 blanca, PS4 azul, Switch y Switch 2 rojas con el «2» en un círculo blanco, Xbox verde—, estrella con el %, precio anterior tachado, precio actual y ahorro) y un pie en HTML: título, plataforma, precios, ahorro, enlace "Ver oferta en Amazon" y hashtags. Si falla la imagen, se envía solo el texto.
 - **Buenos días:** imagen de cabecera más un texto con siete variantes, una por día de la semana.
 - **Presentación del canal:** `py main.py --test`.
 - Pensado para leerse en el móvil: frases cortas, emojis como iconos y precios en formato español (`1.299,99 €`).
