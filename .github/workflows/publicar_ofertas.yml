@@ -11,6 +11,9 @@
 #
 # Secrets necesarios (Settings > Secrets and variables > Actions):
 #   TELEGRAM_BOT_TOKEN, TELEGRAM_CHAT_ID
+# Disparador principal: cron-job.org lanza este workflow cada 5 min (08:00-23:55, Madrid)
+#   con workflow_dispatch y dry_run=false (ver README). El schedule de abajo es solo respaldo:
+#   GitHub lanzaba 3-4 de las 30 pasadas diarias.
 # Ejecución manual: pestaña Actions > "Publicar ofertas" > Run workflow
 #   (por defecto en DRY_RUN: muestra el resultado en el registro sin publicar).
 

@@ -1,5 +1,11 @@
 # Registro de cambios
 
+## 1.3.0 — 2026-11-27 · Xbox y disparador cada 5 minutos
+- **Xbox**: se publican juegos de Xbox Series X|S y Xbox One (`INCLUDE_XBOX`, activo por defecto). Etiqueta verde `XBOX` en la tarjeta (`#107C10`), hashtag `#Xbox` y textos del canal actualizados. Game Pass y Xbox Live se excluyen como suscripciones. Un título con más de una plataforma sigue descartándose.
+- **Producción cada 5 minutos con cron-job.org** (`workflow_dispatch` por la API de GitHub). Diagnóstico: el `schedule` de GitHub solo lanzaba 3-4 pasadas al día y el RSS de "nuevos" de Chollometro solo cubre las 30 últimas ofertas (minutos en horas punta), así que no salía casi nada. El `schedule` queda como respaldo.
+- El repositorio es público: GitHub Actions no consume minutos (coste 0 €). Historial revisado: sin secretos.
+- 113 tests (10 nuevos).
+
 ## 1.2.1 — 2026-11-02 · Descuento mínimo 15 %
 - `MIN_DISCOUNT_PERCENT` pasa de 20 % a **15 %** (más volumen de ofertas). Se actualizan los mensajes, la imagen de bienvenida y la documentación.
 - Cron del workflow en UTC (sin `timezone:`), porque las pasadas programadas no arrancaban. El horario de Madrid lo sigue controlando el bot.

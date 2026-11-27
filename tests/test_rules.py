@@ -12,10 +12,16 @@ from hadouken_zone.rules import detect_platform, is_excluded, rejection_reason
     ("Mario Kart World (Nintendo Switch 2)", None),
     ("Hogwarts Legacy PS5 / Nintendo Switch", None),
     ("FIFA PS4", None),
-    ("Halo Xbox Series X", None),
+    ("Halo Infinite Xbox Series X", "Xbox"),
+    ("Forza Horizon 5 (Xbox One)", "Xbox"),
+    ("EA FC 26 PS5 / Xbox Series X", None),
 ])
 def test_detect_platform(text, expected):
     assert detect_platform(text) == expected
+
+
+def test_xbox_can_be_disabled():
+    assert detect_platform("Halo Infinite Xbox Series X", include_xbox=False) is None
 
 
 def test_switch_2_can_be_enabled():
@@ -27,6 +33,8 @@ def test_switch_2_can_be_enabled():
     ("Auriculares gaming PS5", True),
     ("Consola PlayStation 5 Slim", True),
     ("Nintendo Switch Online 12 meses", True),
+    ("Xbox Game Pass Ultimate 3 meses", True),
+    ("Mando inalámbrico Xbox", True),
     ("Juego para consola Nintendo Switch: Kirby", False),
     ("God of War Ragnarök - Edición Estándar PS5", False),
 ])
@@ -60,10 +68,21 @@ def test_platform_from_extra_text(settings):
     (dict(price=100.0, previous_price=999.0), "referencia incoherente"),
     (dict(available=False), "no disponible"),
     (dict(title="Mando DualSense PS5"), "no es un videojuego"),
-    (dict(title="Halo Xbox"), "plataforma"),
+    (dict(title="Halo PC"), "plataforma"),
 ])
 def test_rejections(settings, kw, motivo):
     assert motivo in rejection_reason(make(**kw), settings)
+
+
+def test_xbox_offer_is_valid(settings):
+    offer = make(title="Halo Infinite - Xbox Series X")
+    assert rejection_reason(offer, settings) is None
+    assert offer.platform == "Xbox"
+
+
+def test_xbox_disabled_by_setting(settings):
+    from dataclasses import replace
+    assert "plataforma" in rejection_reason(make(title="Halo Infinite Xbox"), replace(settings, include_xbox=False))
 
 
 def test_exactly_20_percent_is_accepted(settings):

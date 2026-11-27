@@ -9,7 +9,7 @@ Uso desde Python:
     from hadouken_zone.cards import generar_tarjeta
     ruta = generar_tarjeta(
         titulo="Nombre del juego",
-        plataforma="PS5",               # "PS5", "Nintendo Switch", "Switch 2"...
+        plataforma="PS5",               # "PS5", "Nintendo Switch", "Xbox", "Switch 2"...
         precio_actual=29.99,
         precio_anterior=69.99,
         imagen="https://...jpg",        # URL, ruta local o bytes (opcional)
@@ -54,6 +54,7 @@ PLATAFORMAS = {
     "nintendo switch 2": ("SWITCH 2", (228, 0, 20)),
     "switch": ("SWITCH", (228, 0, 20)),
     "nintendo switch": ("SWITCH", (228, 0, 20)),
+    "xbox": ("XBOX", (16, 124, 16)),
 }
 
 
@@ -287,7 +288,7 @@ def generar_tarjeta(titulo: str, plataforma: str, precio_actual: float,
         img.alpha_composite(h, (W - h.width - 28, H - 92))
     d.text((80, H - 35), "HADOUKEN ZONE", font=F_TITULAR(34), fill=WHITE, anchor="lm")
     d.text((80 + F_TITULAR(34).getlength("HADOUKEN ZONE") + 24, H - 35),
-           "Ofertas verificadas de PS5 y Switch", font=F_TEXTO(24), fill=LILAC, anchor="lm")
+           "Ofertas verificadas de PS5, Switch y Xbox", font=F_TEXTO(24), fill=LILAC, anchor="lm")
 
     Path(salida).parent.mkdir(parents=True, exist_ok=True)
     out = img.convert("RGB")

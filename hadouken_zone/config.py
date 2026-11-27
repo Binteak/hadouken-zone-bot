@@ -23,6 +23,7 @@ GOOD_MORNING_IMAGE = BRANDING_DIR / "telegram" / "cabeceras" / "cabecera_buenos_
 
 PLATFORM_PS5 = "PS5"
 PLATFORM_SWITCH = "Nintendo Switch"
+PLATFORM_XBOX = "Xbox"
 
 # Búsquedas que recorre el scraper (editables). Se piden SCRAPE_PAGES páginas de cada una.
 SEARCHES = (
@@ -30,6 +31,7 @@ SEARCHES = (
     {"platform": PLATFORM_PS5, "query": "videojuegos playstation 5 oferta"},
     {"platform": PLATFORM_SWITCH, "query": "juegos nintendo switch"},
     {"platform": PLATFORM_SWITCH, "query": "videojuegos nintendo switch oferta"},
+    {"platform": PLATFORM_XBOX, "query": "juegos xbox series x"},
 )
 
 
@@ -71,6 +73,7 @@ class Settings:
     max_discount_percent: int = 90        # por encima se considera precio de referencia incoherente
     max_reference_price: float = 300.0    # un juego por encima de esto: referencia sospechosa
     include_switch_2: bool = False
+    include_xbox: bool = True             # juegos de Xbox Series X|S y Xbox One
     republish_after_days: int = 7
 
     # Calendario
@@ -102,6 +105,7 @@ class Settings:
             verify_product_page=_bool(g("VERIFY_PRODUCT_PAGE", "true")),
             min_discount_percent=int(g("MIN_DISCOUNT_PERCENT", d.min_discount_percent)),
             include_switch_2=_bool(g("INCLUDE_SWITCH_2", "false")),
+            include_xbox=_bool(g("INCLUDE_XBOX", "true")),
             republish_after_days=int(g("REPUBLISH_AFTER_DAYS", d.republish_after_days)),
             timezone=g("TIMEZONE", d.timezone),
             good_morning_time=_parse_time(g("GOOD_MORNING_TIME", "09:00")),

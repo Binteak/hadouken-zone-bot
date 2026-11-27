@@ -61,6 +61,11 @@ def test_offer_caption_without_affiliate_has_no_notice():
     assert "#NintendoSwitch" in caption
 
 
+def test_offer_caption_xbox_hashtag():
+    offer = Offer(asin="B0TSTXB001", title="Halo Infinite", price=20, previous_price=40, platform="Xbox")
+    assert "#Xbox" in messages.offer_caption(offer, "https://www.amazon.es/dp/B0TSTXB001")
+
+
 def test_caption_stays_under_telegram_limit():
     offer = Offer(asin="B0TSTSW001", title="X" * 2000, price=30, previous_price=50, platform="PS5")
     assert len(messages.offer_caption(offer, "https://a.es")) <= 1024

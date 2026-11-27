@@ -28,6 +28,7 @@ Guía de marca y recursos gráficos del canal de Telegram.
 | Rojo | `#E8362E` | Avisos (Agotado) |
 | Azul PS5 | `#0070E0` | Etiqueta de plataforma PS5 |
 | Rojo Switch | `#E40014` | Etiqueta de plataforma Switch |
+| Verde Xbox | `#107C10` | Etiqueta de plataforma Xbox |
 
 ## Tipografía
 

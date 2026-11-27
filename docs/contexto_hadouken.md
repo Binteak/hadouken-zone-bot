@@ -1,11 +1,11 @@
 # Contexto del proyecto: Hadouken Zone
 
 > Documento maestro del proyecto. Es la referencia para cualquier persona o asistente (Claude) que trabaje en él.
-> Última actualización: 2026-11-02 · versión 1.2.1
+> Última actualización: 2026-11-27 · versión 1.3.0
 
 ## 1. Qué es
 
-**Hadouken Zone** es un producto de software: un bot de Telegram que encuentra ofertas de videojuegos de **PlayStation 5** y **Nintendo Switch** en **Amazon.es** y las publica automáticamente en un canal de Telegram con enlace de afiliado.
+**Hadouken Zone** es un producto de software: un bot de Telegram que encuentra ofertas de videojuegos de **PlayStation 5**, **Nintendo Switch** y **Xbox** en **Amazon.es** y las publica automáticamente en un canal de Telegram con enlace de afiliado.
 
 - **Objetivo de negocio:** generar comisiones de Amazon Afiliados con un canal de ofertas fiable y atractivo.
 - **Objetivo de producto:** que sea un proyecto profesional que se pueda **vender en el futuro**: código limpio y probado, documentación completa, branding propio y configuración por `.env`, sin valores fijos de un cliente concreto.
@@ -14,15 +14,16 @@
 
 ### Producción: GitHub Actions + fuente Chollometro (gratis, sin equipos encendidos)
 
-- **Repositorio privado:** `Binteak/hadouken-zone-bot`. Workflow: `.github/workflows/publicar_ofertas.yml`.
-- **Cron:** cada 30 minutos, de **09:07 a 23:07, hora de Madrid**. Está escrito en UTC (`7,37 7-21 * * *` y `7 22 * * *`) para cubrir tanto el horario de invierno como el de verano sin depender de la clave `timezone:` (con ella no arrancaban las pasadas automáticas). El bot decide con la hora de Madrid si le toca publicar, y las pasadas fuera de horario terminan en segundos. Se evita la hora en punto, que es cuando GitHub más se retrasa.
+- **Repositorio público:** `Binteak/hadouken-zone-bot` (los secrets no se ven). Workflow: `.github/workflows/publicar_ofertas.yml`.
+- **Disparador principal: cron-job.org**, cada 5 minutos de 08:00 a 23:55 (Europe/Madrid), con `workflow_dispatch` por la API de GitHub (token *fine-grained* solo de este repo, permiso Actions: Read and write; cuerpo `{"ref":"main","inputs":{"dry_run":"false"}}`). Motivo: el `schedule` de GitHub solo lanzaba 3-4 de las 30 pasadas diarias (comprobado el 2026-11-27), y el RSS de "nuevos" de Chollometro solo guarda las 30 últimas ofertas de todas las categorías (de 7 a 16 minutos en horas punta), así que con pasadas espaciadas se perdían casi todas.
+- **Respaldo (schedule de GitHub):** cada 30 minutos, de **09:07 a 23:07, hora de Madrid**. Está escrito en UTC (`7,37 7-21 * * *` y `7 22 * * *`) para cubrir tanto el horario de invierno como el de verano sin depender de la clave `timezone:` (con ella no arrancaban las pasadas automáticas). El bot decide con la hora de Madrid si le toca publicar, y las pasadas fuera de horario terminan en segundos. Se evita la hora en punto, que es cuando GitHub más se retrasa.
 - **Cada ejecución hace `python main.py --ciclo`:**
   - A las 09:07, **buenos días** con imagen.
   - En cada ejecución, **escaneo de las fuentes** y publicación de **todas** las ofertas nuevas válidas, con **60 s** entre ofertas (máximo 25 por ejecución).
 - **Estado entre ejecuciones:** `offers.json` y `state.json` se guardan en la rama **`estado`** (commit forzado del propio workflow). Solo se guarda cuando se publica de verdad.
 - **Secrets de GitHub:** `TELEGRAM_BOT_TOKEN` y `TELEGRAM_CHAT_ID`. `AMAZON_PARTNER_TAG` va vacío en el workflow (afiliación desactivada).
 - **Ejecución manual:** *Actions → Publicar ofertas → Run workflow* (por defecto `dry_run=true`).
-- **Coste:** repo privado en GitHub Free (~2.000 min/mes). Unas 30 ejecuciones al día de ~1 minuto, más 1 minuto por oferta publicada, suman unos 1.000 minutos al mes.
+- **Coste:** 0 €. Repositorio público: GitHub Actions no consume minutos. cron-job.org es gratuito.
 - **Por qué no se lee Amazon desde GitHub:** la prueba del 2026-11-02 dio **HTTP 503**, porque Amazon bloquea las IP de centros de datos. No se intenta esquivar (ni proxies ni rotación de IP).
 
 ### Alternativa en casa: PC 24/7 (`py main.py`)
@@ -45,8 +46,8 @@ El bot no depende de una sola web. Cada fuente implementa `find_offers(limit, is
 
 Una oferta solo se publica si cumple **todas** estas condiciones (`hadouken_zone/rules.py`):
 
-1. Es un **videojuego** de **PS5** o **Nintendo Switch**. La plataforma se detecta en el título o en la ficha. Se descartan Switch 2 (configurable con `INCLUDE_SWITCH_2`), los títulos que mencionan las dos plataformas, PS4, Xbox y PC.
-2. **No es un accesorio ni hardware**: mandos, auriculares, consolas, cargadores, fundas, amiibo, tarjetas regalo, suscripciones (PS Plus, Switch Online)…
+1. Es un **videojuego** de **PS5**, **Nintendo Switch** o **Xbox** (Series X|S y Xbox One; desactivable con `INCLUDE_XBOX=false`). La plataforma se detecta en el título o en la ficha. Se descartan Switch 2 (configurable con `INCLUDE_SWITCH_2`), los títulos que mencionan más de una plataforma, PS4 y PC.
+2. **No es un accesorio ni hardware**: mandos, auriculares, consolas, cargadores, fundas, amiibo, tarjetas regalo, suscripciones (PS Plus, Switch Online, Game Pass)…
 3. Está **disponible**.
 4. Tiene **precio actual y precio anterior válidos**, y el actual es menor que el anterior.
 5. **Descuento ≥ 15 %** (`MIN_DISCOUNT_PERCENT`; era 20 % hasta la versión 1.2.0, rebajado por decisión del titular para tener más volumen).
@@ -141,7 +142,8 @@ main.py ─► Scheduler (scheduler.py) ─► Pipeline (pipeline.py)
 3. Migrar a la API oficial de Amazon para afiliados.
 4. Mostrar la hora de consulta del precio en el pie ("precio a las 10:30").
 5. ~~Leer Amazon desde GitHub Actions~~: bloqueado (503). Producción con la fuente `chollometro` desde GitHub. Para leer Amazon directamente hace falta un equipo en casa o la API oficial.
-6. Añadir más fuentes de chollos para tener más volumen de ofertas.
-7. Resumen semanal automático ("Top 5 de la semana", la cabecera ya existe).
-8. Panel de estadísticas (ofertas publicadas y clics).
-9. Producto vendible: instalador, licencia y manual de cliente.
+6. Añadir más fuentes de chollos para tener más volumen de ofertas. Prioridad: un RSS de Chollometro solo de videojuegos (no encontrado aún; `/rss/categorias/videojuegos` devuelve ofertas antiguas).
+7. Franjas horarias de publicación (08:00 resumen, 10:30, 14:00, 18:00, 21:30; fin de semana 10:00 y 20:00) con publicación inmediata de ofertas excepcionales (≥40 %). Diseñado el 2026-11-27, pendiente de implementar.
+8. Resumen semanal automático ("Top 5 de la semana", la cabecera ya existe).
+9. Panel de estadísticas (ofertas publicadas y clics).
+10. Producto vendible: instalador, licencia y manual de cliente.

@@ -1,6 +1,6 @@
 # Hadouken Zone
 
-**Bot de Telegram que publica automáticamente ofertas de videojuegos de PS5 y Nintendo Switch en Amazon.es**, con un descuento mínimo del 15 %, precio comprobado, tarjeta visual de cada oferta y enlace de afiliado.
+**Bot de Telegram que publica automáticamente ofertas de videojuegos de PS5, Nintendo Switch y Xbox en Amazon.es**, con un descuento mínimo del 15 %, precio comprobado, tarjeta visual de cada oferta y enlace de afiliado.
 
 ## Qué hace cada día
 
@@ -9,7 +9,7 @@
 | Hora (Madrid) | Acción |
 |---|---|
 | 09:07 | Mensaje de **buenos días** con imagen de cabecera. |
-| Cada 30 min (09:07 – 23:07) | Busca ofertas nuevas en las **fuentes** y publica todas las válidas, con **1 minuto** entre ofertas. |
+| Cada 5 min (08:00 – 23:30) | Busca ofertas nuevas en las **fuentes** y publica todas las válidas, con **1 minuto** entre ofertas. Lo lanza **cron-job.org** (ver abajo). |
 
 **Fuentes de ofertas** (`hadouken_zone/sources/`, se eligen con `OFFER_SOURCES`):
 
@@ -79,7 +79,7 @@ Con `DRY_RUN=true` todo se muestra en la consola y no se publica nada. Para publ
 
 ## Automatización en GitHub Actions (producción)
 
-Repositorio privado `Binteak/hadouken-zone-bot`. El workflow `.github/workflows/publicar_ofertas.yml` ejecuta `python main.py --ciclo` cada 30 minutos entre las 09:07 y las 23:07 (Europe/Madrid), con la fuente `chollometro`.
+Repositorio público `Binteak/hadouken-zone-bot` (los secrets no son visibles). El workflow `.github/workflows/publicar_ofertas.yml` ejecuta `python main.py --ciclo` cada 30 minutos entre las 09:07 y las 23:07 (Europe/Madrid), con la fuente `chollometro`.
 
 **Configuración (una sola vez):** en GitHub → *Settings → Secrets and variables → Actions → New repository secret*:
 
@@ -88,11 +88,19 @@ Repositorio privado `Binteak/hadouken-zone-bot`. El workflow `.github/workflows/
 | `TELEGRAM_BOT_TOKEN` | El token del bot (el mismo que en tu `.env`) |
 | `TELEGRAM_CHAT_ID` | `@hadoukenzone` (o el ID del canal) |
 
+**Disparador externo (cron-job.org):** el `schedule` de GitHub es poco fiable (en noviembre de 2026 solo lanzaba 3-4 de las 30 pasadas diarias). Por eso un trabajo de **cron-job.org** llama cada 5 minutos, de 08:00 a 23:55 (Europe/Madrid), a la API de GitHub para lanzar el workflow:
+
+- `POST https://api.github.com/repos/Binteak/hadouken-zone-bot/actions/workflows/publicar_ofertas.yml/dispatches`
+- Cabeceras: `Authorization: Bearer <token>` (token *fine-grained* solo de este repo, permiso **Actions: Read and write**) y `Accept: application/vnd.github+json`
+- Cuerpo: `{"ref":"main","inputs":{"dry_run":"false"}}` (respuesta correcta: **204**)
+
+El `schedule` del workflow se mantiene como respaldo. `concurrency` evita pasadas simultáneas. Cuando caduque el token, cron-job.org avisa por email: genera uno nuevo y cámbialo en el trabajo.
+
 **Probar sin publicar:** pestaña *Actions → Publicar ofertas → Run workflow* con `dry_run = true`. El registro de la ejecución muestra lo que se habría publicado. Además, en *Artifacts* se guardan los registros y, si Amazon cambia su web, el HTML de diagnóstico.
 
 **Estado entre ejecuciones:** el historial de publicadas (`offers.json`) y el estado (`state.json`) se guardan en la rama `estado`, que actualiza el propio bot. No la borres.
 
-**Coste:** repo privado en GitHub Free (~2.000 minutos al mes). Unas 30 ejecuciones al día de ~1 minuto, más 1 minuto por oferta publicada, suman unos 1.000 minutos al mes. Los tests (`tests.yml`) se ejecutan en cada push de código.
+**Coste:** 0 €. El repositorio es **público**, y en repositorios públicos GitHub Actions no consume minutos. cron-job.org es gratuito. Los tests (`tests.yml`) se ejecutan en cada push de código.
 
 **Importante:** no ejecutes a la vez el bot 24/7 en tu PC y el de GitHub, o se publicarán ofertas duplicadas.
 
@@ -120,6 +128,7 @@ Los tests no acceden a internet: el HTML de Amazon y la API de Telegram están s
 | `REPUBLISH_AFTER_DAYS` | `7` | No repetir un producto antes de N días (salvo si baja otro 5 %) |
 | `OFFER_SOURCES` | `chollometro` | Fuentes de ofertas, separadas por comas |
 | `INCLUDE_SWITCH_2` | `false` | Incluir juegos de Switch 2 |
+| `INCLUDE_XBOX` | `true` | Incluir juegos de Xbox (Series X\|S y Xbox One) |
 | `REQUEST_DELAY_SECONDS` / `SCRAPE_PAGES` | `4` / `2` | Prudencia al consultar Amazon |
 | `VERIFY_PRODUCT_PAGE` | `true` | Confirmar precios en la ficha antes de publicar |
 

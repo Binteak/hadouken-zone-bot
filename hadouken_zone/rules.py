@@ -4,12 +4,13 @@ from __future__ import annotations
 
 import re
 
-from .config import PLATFORM_PS5, PLATFORM_SWITCH, Settings
+from .config import PLATFORM_PS5, PLATFORM_SWITCH, PLATFORM_XBOX, Settings
 from .models import Offer
 
 PLATFORM_PATTERNS = {
     PLATFORM_PS5: [r"\bps\s?5\b", r"\bplaystation\s?5\b"],
     PLATFORM_SWITCH: [r"\bnintendo\s+switch\b", r"\bswitch\s+(?:oled|lite)\b", r"\bswitch\b"],
+    PLATFORM_XBOX: [r"\bxbox\b"],                 # Xbox Series X|S y Xbox One
 }
 SWITCH_2_PATTERN = r"\b(?:nintendo\s+)?switch\s?2\b"
 
@@ -21,7 +22,7 @@ EXCLUDED_WORDS = (
     "suscripción", "suscripcion", "membership", "protector de pantalla",
     "disco duro", "ssd", "tarjeta de memoria", "cámara", "camara", "playstation portal",
     "batería", "bateria", "grip", "adaptador", "nintendo switch online", "playstation plus",
-    "ps plus",
+    "ps plus", "game pass", "xbox live",
 )
 # Palabras que solo excluyen si el título no dice que es un juego ("Juego para consola PS5")
 SOFT_EXCLUDED_WORDS = ("consola", "memoria", "soporte", "cable")
@@ -36,12 +37,14 @@ def _has_word(text: str, word: str) -> bool:
     return re.search(r"(?<!\w)" + re.escape(word) + r"(?!\w)", text) is not None
 
 
-def detect_platform(text: str, include_switch_2: bool = False) -> str | None:
-    """Devuelve 'PS5', 'Nintendo Switch' o None."""
+def detect_platform(text: str, include_switch_2: bool = False, include_xbox: bool = True) -> str | None:
+    """Devuelve 'PS5', 'Nintendo Switch', 'Xbox' o None."""
     t = normalize(text)
     if re.search(SWITCH_2_PATTERN, t):
         return PLATFORM_SWITCH if include_switch_2 else None
     found = [p for p, pats in PLATFORM_PATTERNS.items() if any(re.search(x, t) for x in pats)]
+    if not include_xbox and PLATFORM_XBOX in found:
+        return None
     # Si menciona las dos (p. ej. "Hogwarts Legacy PS5/Switch") no es fiable
     return found[0] if len(found) == 1 else None
 
@@ -61,9 +64,9 @@ def rejection_reason(offer: Offer, settings: Settings) -> str | None:
     if is_excluded(offer.title):
         return "no es un videojuego (accesorio/hardware)"
 
-    platform = detect_platform(offer.title, settings.include_switch_2)
+    platform = detect_platform(offer.title, settings.include_switch_2, settings.include_xbox)
     if platform is None and offer.platform_text:
-        platform = detect_platform(offer.platform_text, settings.include_switch_2)
+        platform = detect_platform(offer.platform_text, settings.include_switch_2, settings.include_xbox)
     if platform is None:
         return "plataforma no reconocida o no objetivo"
     offer.platform = platform

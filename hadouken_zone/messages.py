@@ -11,6 +11,8 @@ DIAS = ["lunes", "martes", "miércoles", "jueves", "viernes", "sábado", "doming
 MESES = ["enero", "febrero", "marzo", "abril", "mayo", "junio", "julio", "agosto",
          "septiembre", "octubre", "noviembre", "diciembre"]
 
+PLATFORM_TAGS = {"PS5": "#PS5", "Nintendo Switch": "#NintendoSwitch", "Xbox": "#Xbox"}
+
 AFFILIATE_NOTICE = "Como afiliado de Amazon, obtengo ingresos por las compras adscritas que cumplen los requisitos aplicables."
 
 GOOD_MORNING_OPENINGS = [
@@ -38,7 +40,7 @@ def good_morning_message(d: date, scan_minutes: int = 30, min_discount: int = 20
     lines = [
         opening,
         "",
-        f"Hoy es {fecha_larga(d)} y arrancamos la caza de ofertas de <b>PS5</b> y <b>Nintendo Switch</b>. 🕹️",
+        f"Hoy es {fecha_larga(d)} y arrancamos la caza de ofertas de <b>PS5</b>, <b>Nintendo Switch</b> y <b>Xbox</b>. 🕹️",
         "",
         f"🔎 Revisamos Amazon cada <b>{scan_minutes} minutos</b>",
         f"🏷️ Solo descuentos de <b>-{min_discount}% o más</b>, con precio comprobado",
@@ -46,7 +48,7 @@ def good_morning_message(d: date, scan_minutes: int = 30, min_discount: int = 20
         "",
         "¡Vamos con las ofertas! 👇",
         "",
-        "#HadoukenZone #PS5 #NintendoSwitch",
+        "#HadoukenZone #PS5 #NintendoSwitch #Xbox",
     ]
     if affiliate:
         lines += ["", f"<i>{AFFILIATE_NOTICE}</i>"]
@@ -54,7 +56,7 @@ def good_morning_message(d: date, scan_minutes: int = 30, min_discount: int = 20
 
 
 def offer_caption(offer: Offer, url: str, affiliate: bool = True) -> str:
-    tag = "#PS5" if offer.platform == "PS5" else "#NintendoSwitch"
+    tag = PLATFORM_TAGS.get(offer.platform, "#Videojuegos")
     lines = [
         f"🔥 <b>-{offer.discount_percent}%</b> · <b>{escape(offer.title)}</b>",
         "",
@@ -79,9 +81,9 @@ def test_message(min_discount: int = 15) -> str:
     return (
         "🎮 <b>¡Bienvenidos a HADOUKEN ZONE!</b>\n\n"
         "Aquí encontrarás las mejores ofertas de videojuegos para "
-        "<b>PlayStation 5</b> y <b>Nintendo Switch</b> en Amazon.\n\n"
+        "<b>PlayStation 5</b>, <b>Nintendo Switch</b> y <b>Xbox</b> en Amazon.\n\n"
         "🔎 Revisamos precios durante todo el día\n"
         f"🏷️ Solo descuentos de -{min_discount}% o más, comprobados\n"
         "🔔 Activa las notificaciones\n\n"
-        "#HadoukenZone #PS5 #NintendoSwitch"
+        "#HadoukenZone #PS5 #NintendoSwitch #Xbox"
     )
