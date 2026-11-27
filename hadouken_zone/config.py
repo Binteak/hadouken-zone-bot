@@ -20,6 +20,7 @@ BRANDING_DIR = ROOT_DIR / "branding"
 FONTS_DIR = BRANDING_DIR / "fuentes"
 MASCOT_DIR = BRANDING_DIR / "mascota"
 GOOD_MORNING_IMAGE = BRANDING_DIR / "telegram" / "cabeceras" / "cabecera_buenos_dias.png"
+GOOD_NIGHT_IMAGE = BRANDING_DIR / "telegram" / "cabeceras" / "cabecera_buenas_noches.png"
 
 PLATFORM_PS5 = "PS5"
 PLATFORM_PS4 = "PS4"
@@ -85,6 +86,8 @@ class Settings:
     timezone: str = "Europe/Madrid"
     good_morning_time: time = time(9, 0)
     active_until: time = time(23, 30)
+    good_night_time: time | None = time(23, 0)   # None = sin buenas noches
+    good_night_top: int = 3                      # ofertas destacadas en el hilo
     scan_interval_minutes: int = 30
     offer_delay_seconds: int = 60
     max_offers_per_cycle: int = 25
@@ -116,6 +119,8 @@ class Settings:
             timezone=g("TIMEZONE", d.timezone),
             good_morning_time=_parse_time(g("GOOD_MORNING_TIME", "09:00")),
             active_until=_parse_time(g("ACTIVE_UNTIL", "23:30")),
+            good_night_time=_parse_time(g("GOOD_NIGHT_TIME", "23:00")) if (g("GOOD_NIGHT_TIME", "23:00") or "").strip() else None,
+            good_night_top=int(g("GOOD_NIGHT_TOP", d.good_night_top)),
             scan_interval_minutes=int(g("SCAN_INTERVAL_MINUTES", d.scan_interval_minutes)),
             offer_delay_seconds=int(g("OFFER_DELAY_SECONDS", d.offer_delay_seconds)),
             max_offers_per_cycle=int(g("MAX_OFFERS_PER_CYCLE", d.max_offers_per_cycle)),

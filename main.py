@@ -5,6 +5,7 @@
                                buenos días si toca hoy + escaneo si está en horario
     py main.py --once          Un solo escaneo de Amazon y publicación ahora
     py main.py --buenos-dias   Envía ahora el mensaje de buenos días
+    py main.py --buenas-noches Envía ahora el hilo de buenas noches (resumen del día)
     py main.py --test          Envía el mensaje de presentación del canal
     py main.py --verificar     Comprueba el token y el canal de Telegram sin publicar nada
 
@@ -31,6 +32,7 @@ def main() -> int:
     group.add_argument("--ciclo", action="store_true", help="una pasada del calendario y termina (cron)")
     group.add_argument("--once", action="store_true", help="un escaneo y publicación ahora")
     group.add_argument("--buenos-dias", action="store_true", help="envía el buenos días ahora")
+    group.add_argument("--buenas-noches", action="store_true", help="envía el hilo de buenas noches ahora")
     group.add_argument("--test", action="store_true", help="envía el mensaje de presentación")
     group.add_argument("--verificar", action="store_true", help="comprueba token y canal sin publicar")
     args = parser.parse_args()
@@ -61,6 +63,11 @@ def main() -> int:
 
     if args.buenos_dias:
         pipeline.send_good_morning(datetime.now(ZoneInfo(settings.timezone)).date())
+        return 0
+
+    if args.buenas_noches:
+        tz = ZoneInfo(settings.timezone)
+        pipeline.send_good_night(datetime.now(tz).date(), tz)
         return 0
 
     if args.once:

@@ -107,8 +107,8 @@ def _cargar_imagen(imagen) -> Image.Image | None:
         return None
 
 
-def _fondo() -> Image.Image:
-    """Degradado radial morado + rayos de velocidad + trama de puntos."""
+def _fondo(trama: bool = True) -> Image.Image:
+    """Degradado radial morado + rayos de velocidad + trama de puntos (opcional)."""
     small = Image.new("RGB", (W // 4, H // 4))
     px = small.load()
     cx, cy, R = 300 / 4, 330 / 4, 1000 / 4
@@ -129,7 +129,7 @@ def _fondo() -> Image.Image:
                    (cx * 4 + L * math.cos(a - s), cy * 4 + L * math.sin(a - s)),
                    (cx * 4 + L * math.cos(a + s), cy * 4 + L * math.sin(a + s))],
                   fill=(255, 255, 255, rnd.randint(7, 16)))
-    for yy in range(0, 260, 20):          # trama arriba a la derecha
+    for yy in range(0, 260 if trama else 0, 20):          # trama arriba a la derecha
         for xx in range(W - 420, W, 20):
             t = ((xx - (W - 420)) / 420 + (1 - yy / 260)) / 2
             r = 5 * t

@@ -1,7 +1,7 @@
 # Contexto del proyecto: Hadouken Zone
 
 > Documento maestro del proyecto. Es la referencia para cualquier persona o asistente (Claude) que trabaje en él.
-> Última actualización: 2026-11-27 · versión 1.4.0
+> Última actualización: 2026-11-27 · versión 1.5.0
 
 ## 1. Qué es
 
@@ -19,6 +19,7 @@
 - **Respaldo (schedule de GitHub):** cada 30 minutos, de **09:07 a 23:07, hora de Madrid**. Está escrito en UTC (`7,37 7-21 * * *` y `7 22 * * *`) para cubrir tanto el horario de invierno como el de verano sin depender de la clave `timezone:` (con ella no arrancaban las pasadas automáticas). El bot decide con la hora de Madrid si le toca publicar, y las pasadas fuera de horario terminan en segundos. Se evita la hora en punto, que es cuando GitHub más se retrasa.
 - **Cada ejecución hace `python main.py --ciclo`:**
   - En la primera pasada desde las 09:00, **buenos días** con imagen.
+  - En la primera pasada desde las 23:00 (`GOOD_NIGHT_TIME`), **hilo de buenas noches**: cabecera con el resumen del día y las `GOOD_NIGHT_TOP` (3) mejores ofertas publicadas ese día como respuestas sin sonido (`reply_parameters` + `disable_notification`). Se marca en `state.json` (`last_good_night`) y, a partir de ahí, no se publican más ofertas hasta el día siguiente.
   - En cada ejecución, **escaneo de las fuentes** y publicación de **todas** las ofertas nuevas válidas, con **60 s** entre ofertas (máximo 25 por ejecución).
 - **Estado entre ejecuciones:** `offers.json` y `state.json` se guardan en la rama **`estado`** (commit forzado del propio workflow). Solo se guarda cuando se publica de verdad.
 - **Secrets de GitHub:** `TELEGRAM_BOT_TOKEN` y `TELEGRAM_CHAT_ID`. `AMAZON_PARTNER_TAG` va vacío en el workflow (afiliación desactivada).
@@ -69,6 +70,7 @@ Las ofertas de cada escaneo se publican de **mayor a menor descuento**.
 
 - **Oferta:** foto con la tarjeta 1280x720 (`cards.py`: carátula, etiqueta de plataforma —PS5 blanca, PS4 azul, Switch y Switch 2 rojas con el «2» en un círculo blanco, Xbox verde—, estrella con el %, precio anterior tachado, precio actual y ahorro) y un pie en HTML: título, plataforma, precios, ahorro, enlace "Ver oferta en Amazon" y hashtags. Si falla la imagen, se envía solo el texto.
 - **Buenos días:** imagen de cabecera más un texto con siete variantes, una por día de la semana.
+- **Buenas noches (hilo):** cabecera `cabecera_buenas_noches.png` (mascota dormida, luna y «Z z z»; se genera con `tools/branding/generar_buenas_noches.py`) con el resumen del día. Debajo, como respuestas, las mejores ofertas del día con medalla (🥇🥈🥉), su tarjeta y su enlace. Si no hubo ofertas, solo la cabecera con un aviso. Siete aperturas y cinco cierres que rotan por día.
 - **Presentación del canal:** `py main.py --test`.
 - Pensado para leerse en el móvil: frases cortas, emojis como iconos y precios en formato español (`1.299,99 €`).
 
@@ -104,7 +106,7 @@ main.py ─► Scheduler (scheduler.py) ─► Pipeline (pipeline.py)
 | `hadouken_zone/` | Código del producto (ver arquitectura). |
 | `tests/` | Tests con pytest. `tests/fixtures/` contiene HTML de Amazon de ejemplo que documenta la estructura esperada. |
 | `branding/` | Originales, mascota HD, fuentes Inter (OFL), avatar, bienvenida, cabeceras (incluida la de buenos días), stickers, tarjetas de ejemplo y guía de marca. |
-| `tools/branding/` | `mejorar_mascota.py` (alta resolución) y `generar_disenos.py` (todos los diseños). |
+| `tools/branding/` | `mejorar_mascota.py` (alta resolución), `generar_disenos.py` (todos los diseños) y `generar_buenas_noches.py` (cabecera de buenas noches). |
 | `scripts/` | `iniciar_bot.ps1` y `programar_inicio_windows.ps1` (modo PC 24/7). |
 | `.github/workflows/` | `publicar_ofertas.yml` (producción diaria) y `tests.yml` (tests en cada push). |
 | `docs/` | Este documento y `CHANGELOG.md`. |
@@ -144,6 +146,7 @@ main.py ─► Scheduler (scheduler.py) ─► Pipeline (pipeline.py)
 5. ~~Leer Amazon desde GitHub Actions~~: bloqueado (503). Producción con la fuente `chollometro` desde GitHub. Para leer Amazon directamente hace falta un equipo en casa o la API oficial.
 6. Añadir más fuentes de chollos para tener más volumen de ofertas. Prioridad: un RSS de Chollometro solo de videojuegos (no encontrado aún; `/rss/categorias/videojuegos` devuelve ofertas antiguas).
 7. Franjas horarias de publicación (08:00 resumen, 10:30, 14:00, 18:00, 21:30; fin de semana 10:00 y 20:00) con publicación inmediata de ofertas excepcionales (≥40 %). Diseñado el 2026-11-27, pendiente de implementar.
-8. Resumen semanal automático ("Top 5 de la semana", la cabecera ya existe).
-9. Panel de estadísticas (ofertas publicadas y clics).
-10. Producto vendible: instalador, licencia y manual de cliente.
+8. Mascota dormida con las manos juntas junto a la mejilla (pose dibujada o generada aparte; la actual es solo la cabeza retocada). Resumen de la tarde (~15:30). Frases por piezas con memoria anti-repetición.
+9. Resumen semanal automático ("Top 5 de la semana", la cabecera ya existe).
+10. Panel de estadísticas (ofertas publicadas y clics).
+11. Producto vendible: instalador, licencia y manual de cliente.

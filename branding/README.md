@@ -11,7 +11,7 @@ Guía de marca y recursos gráficos del canal de Telegram.
 | `fuentes/` | Tipografía Inter (licencia OFL, ver `LICENCIA_OFL.txt`) | La usan el bot y las herramientas de diseño. |
 | `telegram/avatar/` | Foto del canal 640×640 en morado y naranja | Subir tal cual; Telegram la recorta en círculo. |
 | `telegram/publicaciones/` | Imagen de bienvenida 1280×720 | Mensaje fijado del canal. |
-| `telegram/cabeceras/` | Buenos días, Chollo del día, Oferta flash, Top 5 semanal, Especial PS5, Especial Switch | La de buenos días la publica el bot cada mañana; el resto, para publicaciones especiales. |
+| `telegram/cabeceras/` | Buenos días, Buenas noches, Chollo del día, Oferta flash, Top 5 semanal, Especial PS5, Especial Switch | El bot publica la de buenos días cada mañana y la de buenas noches a las 23:00; el resto, para publicaciones especiales. La de buenas noches (mascota dormida, luna y «Z z z») se genera con `tools/branding/generar_buenas_noches.py`. |
 | `telegram/stickers/` | 4 stickers 512×512 PNG transparentes | Crear el paquete con @Stickers en Telegram. |
 | `telegram/tarjetas_ejemplo/` | Dos tarjetas de oferta de muestra | Referencia visual de lo que genera `hadouken_zone/cards.py`. Las carátulas son inventadas. |
 
@@ -50,4 +50,5 @@ Los diseños se generan con código, así que se pueden rehacer o modificar (ver
 py -m pip install -r requirements-dev.txt
 py tools\branding\mejorar_mascota.py     # solo si cambian los originales
 py tools\branding\generar_disenos.py
+py tools\branding\generar_buenas_noches.py   # cabecera de buenas noches
 ```

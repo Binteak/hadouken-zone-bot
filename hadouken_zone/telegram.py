@@ -2,6 +2,7 @@
 
 from __future__ import annotations
 
+import json
 import logging
 from pathlib import Path
 
@@ -53,14 +54,21 @@ class TelegramClient:
         })
         return True
 
-    def send_photo(self, photo: Path, caption: str) -> bool:
+    def send_photo(self, photo: Path, caption: str, reply_to: int | None = None, silent: bool = False):
+        """Envía una foto con pie. Devuelve el message_id (o True si no lo hay / DRY_RUN).
+
+        reply_to: id del mensaje al que responde (para encadenar un "hilo" en el canal).
+        silent: sin sonido de notificación.
+        """
         if self.dry_run:
-            log.info("[DRY RUN] Foto %s con pie:\n%s", Path(photo).name, caption)
+            extra = f" (respuesta a {reply_to})" if reply_to else ""
+            log.info("[DRY RUN] Foto %s%s con pie:\n%s", Path(photo).name, extra, caption)
             return True
+        data = {"chat_id": self.chat_id, "caption": caption, "parse_mode": "HTML"}
+        if reply_to and reply_to is not True:
+            data["reply_parameters"] = json.dumps({"message_id": reply_to, "allow_sending_without_reply": True})
+        if silent:
+            data["disable_notification"] = "true"
         with open(photo, "rb") as fh:
-            self._call(
-                "sendPhoto",
-                {"chat_id": self.chat_id, "caption": caption, "parse_mode": "HTML"},
-                files={"photo": (Path(photo).name, fh, "image/jpeg")},
-            )
-        return True
+            payload = self._call("sendPhoto", data, files={"photo": (Path(photo).name, fh, "image/jpeg")})
+        return (payload.get("result") or {}).get("message_id") or True

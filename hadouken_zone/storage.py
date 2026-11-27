@@ -52,6 +52,15 @@ class OfferStore:
         last_price = record.get("last_published_price")
         return bool(last_price and offer.price and offer.price <= last_price * 0.95)
 
+    def published_on(self, day, tz) -> list[dict]:
+        """Ofertas cuya última publicación cae en `day` (fecha local en la zona `tz`)."""
+        out = []
+        for record in self.data["offers"].values():
+            when = record.get("last_published_at")
+            if when and datetime.fromisoformat(when).astimezone(tz).date() == day:
+                out.append(record)
+        return out
+
     def mark_published(self, offer: Offer, url: str) -> None:
         now = utcnow_iso()
         record = self.data["offers"].setdefault(offer.asin, {"first_published_at": now, "times_published": 0})

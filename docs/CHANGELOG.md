@@ -1,5 +1,11 @@
 # Registro de cambios
 
+## 1.5.0 — 2026-11-27 · Hilo de buenas noches
+- **Buenas noches a las 23:00** (`GOOD_NIGHT_TIME`, `GOOD_NIGHT_TOP`): cabecera con el resumen del día (número de ofertas, reparto por plataforma y la mejor) y, como **respuestas sin sonido**, las 3 mejores ofertas publicadas ese día con su tarjeta. Después no se publican más ofertas hasta el día siguiente. Nuevo `py main.py --buenas-noches`.
+- Nueva cabecera `cabecera_buenas_noches.png`: mascota dormida (ojos cerrados, cejas relajadas, coloretes), luna creciente, «Z z z» que no pisan la cabeza ni la luna y etiquetas de plataforma en dos filas. Se genera con `tools/branding/generar_buenas_noches.py`. `cards._fondo()` admite `trama=False` (sin puntos en la esquina).
+- Telegram: `send_photo` devuelve el `message_id` y admite `reply_to` y `silent`.
+- `OfferStore.published_on()`: ofertas publicadas en un día local. 128 tests.
+
 ## 1.4.0 — 2026-11-27 · PS4, Switch 2 y nuevos colores de plataforma
 - **PS4** como plataforma nueva (`INCLUDE_PS4`, activa por defecto), con etiqueta **azul** y hashtag `#PS4`. «PS4/PS5» se publica como PS5.
 - **Switch 2** activada por defecto (`INCLUDE_SWITCH_2=true`) como plataforma propia: etiqueta roja con el **«2» en un círculo blanco** para distinguirla de la Switch, y hashtag `#NintendoSwitch2`.

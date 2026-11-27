@@ -9,7 +9,8 @@
 | Hora (Madrid) | Acción |
 |---|---|
 | 09:00 | Mensaje de **buenos días** con imagen de cabecera (en la primera pasada desde las 09:00). |
-| Cada 5 min (08:00 – 23:30) | Busca ofertas nuevas en las **fuentes** y publica todas las válidas, con **1 minuto** entre ofertas. Lo lanza **cron-job.org** (ver abajo). |
+| Cada 5 min (08:00 – 23:00) | Busca ofertas nuevas en las **fuentes** y publica todas las válidas, con **1 minuto** entre ofertas. Lo lanza **cron-job.org** (ver abajo). |
+| 23:00 | **Hilo de buenas noches**: cabecera con el resumen del día (cuántas ofertas, por plataforma, la mejor) y, como respuestas sin sonido, las **3 mejores ofertas** del día con su tarjeta. Después ya no se publica nada hasta el día siguiente. |
 
 **Fuentes de ofertas** (`hadouken_zone/sources/`, se eligen con `OFFER_SOURCES`):
 
@@ -42,7 +43,7 @@ hadouken-zone/
 │   ├── cards.py             Tarjeta visual de cada oferta
 │   ├── telegram.py          Cliente de la API de Telegram
 │   ├── pipeline.py          Ciclo: buscar → verificar → publicar
-│   ├── scheduler.py         Calendario diario (buenos días + cada 30 min)
+│   ├── scheduler.py         Calendario diario (buenos días, escaneos y buenas noches)
 │   └── logging_setup.py     Registro en consola y logs/
 ├── tests/                   Tests (pytest) con HTML de ejemplo en tests/fixtures/
 ├── branding/                Identidad visual (ver branding/README.md)
@@ -70,6 +71,7 @@ py main.py                 # bot 24/7 (deja la ventana abierta)
 py main.py --ciclo         # una pasada del calendario y termina (lo que hace GitHub Actions)
 py main.py --once          # un escaneo y publicación ahora
 py main.py --buenos-dias   # envía ahora el buenos días
+py main.py --buenas-noches # envía ahora el hilo de buenas noches
 py main.py --test          # mensaje de presentación del canal
 ```
 
@@ -121,6 +123,7 @@ Los tests no acceden a internet: el HTML de Amazon y la API de Telegram están s
 | `DRY_RUN` | `true` | `false` para publicar |
 | `AMAZON_PARTNER_TAG` | vacío | ID de Amazon Afiliados (`xxxx-21`). Si está vacío, los enlaces van sin afiliado |
 | `GOOD_MORNING_TIME` / `ACTIVE_UNTIL` | `09:00` / `23:30` | Inicio y fin de la jornada |
+| `GOOD_NIGHT_TIME` / `GOOD_NIGHT_TOP` | `23:00` / `3` | Hora del hilo de buenas noches (vacío = desactivado) y ofertas que destaca |
 | `SCAN_INTERVAL_MINUTES` | `30` | Minutos entre escaneos |
 | `OFFER_DELAY_SECONDS` | `60` | Segundos entre ofertas |
 | `MAX_OFFERS_PER_CYCLE` | `25` | Límite por escaneo |

@@ -11,7 +11,7 @@ import requests
 from . import messages
 from .affiliate import product_url
 from .cards import generar_tarjeta
-from .config import CARDS_DIR, GOOD_MORNING_IMAGE, Settings
+from .config import CARDS_DIR, GOOD_MORNING_IMAGE, GOOD_NIGHT_IMAGE, Settings
 from .models import Offer
 from .sources import OfferSource, SourceBlocked, build_sources
 from .storage import OfferStore
@@ -41,6 +41,42 @@ class Pipeline:
         else:
             self.telegram.send_message(text)
         log.info("Mensaje de buenos días enviado")
+
+    # ------------------------------------------------------------ buenas noches
+    def send_good_night(self, today, tz) -> int:
+        """Hilo de buenas noches: cabecera con el resumen del día y, como respuestas
+        silenciosas, las mejores ofertas publicadas hoy. Devuelve cuántas destaca."""
+        s = self.settings
+        records = self.store.published_on(today, tz)
+        records.sort(key=lambda r: r.get("last_discount_percent") or 0, reverse=True)
+        text = messages.good_night_message(today, records, s.good_night_top)
+        if GOOD_NIGHT_IMAGE.exists():
+            head_id = self.telegram.send_photo(GOOD_NIGHT_IMAGE, text)
+        else:
+            head_id = self.telegram.send_message(text)
+        log.info("Buenas noches enviado (%s ofertas hoy)", len(records))
+
+        sent = 0
+        for rank, r in enumerate(records[: s.good_night_top], start=1):
+            offer = Offer(asin=r["asin"], title=r.get("title") or "", price=r.get("last_published_price"),
+                          previous_price=r.get("last_previous_price"), platform=r.get("platform"),
+                          image_url=r.get("image_url"))
+            if not offer.discount_percent:
+                continue
+            url = product_url(offer.asin, s.amazon_domain, s.amazon_partner_tag)
+            caption = messages.good_night_item(rank, offer, url, affiliate=bool(s.amazon_partner_tag))
+            self.sleep(3)
+            try:
+                card = generar_tarjeta(
+                    titulo=offer.title, plataforma=offer.platform, precio_actual=offer.price,
+                    precio_anterior=offer.previous_price, imagen=offer.image_url,
+                    salida=CARDS_DIR / f"{offer.asin}.jpg",
+                )
+                self.telegram.send_photo(card, caption, reply_to=head_id, silent=True)
+                sent += 1
+            except Exception:
+                log.exception("Error enviando %s en el hilo de buenas noches", offer.asin)
+        return sent
 
     # ------------------------------------------------------------ ofertas
     def _is_new(self, offer: Offer) -> bool:

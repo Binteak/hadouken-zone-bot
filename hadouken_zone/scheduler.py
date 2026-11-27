@@ -4,6 +4,8 @@ Cada día (zona horaria TIMEZONE):
   - GOOD_MORNING_TIME (09:00): mensaje de buenos días con imagen.
   - Después, cada SCAN_INTERVAL_MINUTES (30): escaneo de Amazon y publicación de todas
     las ofertas nuevas, con OFFER_DELAY_SECONDS (60) entre una y otra.
+  - GOOD_NIGHT_TIME (23:00): hilo de buenas noches (resumen del día + mejores ofertas como
+    respuestas silenciosas). Después ya no se publican ofertas hasta el día siguiente.
   - A partir de ACTIVE_UNTIL (23:30) se detiene hasta el día siguiente.
 
 El estado (último buenos días y último escaneo) se guarda en data/state.json, así que
@@ -48,9 +50,17 @@ class Scheduler:
                             minute=self.settings.good_morning_time.minute, second=0, microsecond=0)
         return now - start <= GOOD_MORNING_GRACE
 
+    def good_night_due(self, now: datetime) -> bool:
+        t = self.settings.good_night_time
+        if t is None or not self.is_active(now) or now.time() < t:
+            return False
+        return self.state["last_good_night"] != now.date().isoformat()
+
     def scan_due(self, now: datetime, ignore_interval: bool = False) -> bool:
         if not self.is_active(now):
             return False
+        if self.state["last_good_night"] == now.date().isoformat():
+            return False             # tras las buenas noches ya no se publica hasta mañana
         if ignore_interval:          # modo cron: cada ejecución programada escanea
             return True
         last = self.state["last_scan_at"]
@@ -76,6 +86,16 @@ class Scheduler:
             self.state.set("last_good_morning", now.date().isoformat())
             self.sleep(self.settings.offer_delay_seconds)
             now = self.clock()
+
+        if self.good_night_due(now):
+            # se marca antes de enviar: si algo falla no se repite el hilo en cada pasada
+            self.state.set("last_good_night", now.date().isoformat())
+            try:
+                self.pipeline.send_good_night(now.date(), self.tz)
+                done.append("good_night")
+            except Exception:
+                log.exception("Error enviando las buenas noches")
+            return done
 
         if self.scan_due(now, ignore_interval):
             self.state.set("last_scan_at", now.isoformat())   # el intervalo cuenta desde el inicio

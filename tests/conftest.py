@@ -36,9 +36,10 @@ class FakeTelegram:
         self.sent.append(("text", text))
         return True
 
-    def send_photo(self, photo, caption):
+    def send_photo(self, photo, caption, reply_to=None, silent=False):
         self.sent.append(("photo", Path(photo).name, caption))
-        return True
+        self.replies = getattr(self, "replies", []) + [(reply_to, silent)]
+        return len(self.sent)          # hace de message_id
 
 
 @pytest.fixture
