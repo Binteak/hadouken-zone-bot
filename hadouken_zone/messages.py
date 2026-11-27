@@ -21,7 +21,7 @@ GOOD_MORNING_OPENINGS = [
     "☀️ <b>¡Buenos días! Arriba, que hay ofertas que cazar.</b>",
     "☕ <b>¡Buenos días, Hadouken Zone!</b>",
     "🎮 <b>¡Buenos días! Mandos listos.</b>",
-    "🔥 <b>¡Buenos días, cazadores de chollos!</b>",
+    "💥 <b>¡Buenos días, cazadores de chollos!</b>",
     "⚡ <b>¡Buenos días! Empieza la jornada de ofertas.</b>",
     "🌅 <b>¡Buenos días, comunidad!</b>",
 ]
@@ -93,7 +93,7 @@ def good_night_message(d: date, records: list[dict], top: int = 3) -> str:
         resumen = " · ".join(f"{SHORT_NAMES.get(p, p)} {c}" for p, c in
                              sorted(por_plat.items(), key=lambda x: -x[1]))
         lines += [f"📊 Hoy: <b>{n} oferta{'s' if n != 1 else ''}</b> ({resumen})",
-                  f"🔥 La mejor: <b>-{best.get('last_discount_percent')}%</b> en {escape(best.get('title') or '')}"]
+                  f"💥 La mejor: <b>-{best.get('last_discount_percent')}%</b> en {escape(best.get('title') or '')}"]
         lines += ["", f"👇 Las {min(top, n)} mejores del día, aquí debajo" if min(top, n) > 1 else "👇 La mejor del día, aquí debajo"]
     lines += ["", closing, "", "#HadoukenZone #ResumenDelDía"]
     return "\n".join(lines)
@@ -115,7 +115,7 @@ def good_night_item(rank: int, offer: Offer, url: str, affiliate: bool = True) -
 def offer_caption(offer: Offer, url: str, affiliate: bool = True) -> str:
     tag = PLATFORM_TAGS.get(offer.platform, "#Videojuegos")
     lines = [
-        f"🔥 <b>-{offer.discount_percent}%</b> · <b>{escape(offer.title)}</b>",
+        f"💥 <b>-{offer.discount_percent}%</b> · <b>{escape(offer.title)}</b>",
         "",
         f"🎮 {escape(offer.platform or '')}",
         f"💶 <b>{precio(offer.price)}</b>  <s>{precio(offer.previous_price)}</s>",
