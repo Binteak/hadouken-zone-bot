@@ -8,7 +8,7 @@
 
 | Hora (Madrid) | Acción |
 |---|---|
-| 09:07 | Mensaje de **buenos días** con imagen de cabecera. |
+| 09:00 | Mensaje de **buenos días** con imagen de cabecera (en la primera pasada desde las 09:00). |
 | Cada 5 min (08:00 – 23:30) | Busca ofertas nuevas en las **fuentes** y publica todas las válidas, con **1 minuto** entre ofertas. Lo lanza **cron-job.org** (ver abajo). |
 
 **Fuentes de ofertas** (`hadouken_zone/sources/`, se eligen con `OFFER_SOURCES`):
@@ -79,7 +79,7 @@ Con `DRY_RUN=true` todo se muestra en la consola y no se publica nada. Para publ
 
 ## Automatización en GitHub Actions (producción)
 
-Repositorio público `Binteak/hadouken-zone-bot` (los secrets no son visibles). El workflow `.github/workflows/publicar_ofertas.yml` ejecuta `python main.py --ciclo` cada 30 minutos entre las 09:07 y las 23:07 (Europe/Madrid), con la fuente `chollometro`.
+Repositorio público `Binteak/hadouken-zone-bot` (los secrets no son visibles). El workflow `.github/workflows/publicar_ofertas.yml` ejecuta `python main.py --ciclo` en cada pasada (cada 5 minutos con cron-job.org; ver abajo), con la fuente `chollometro`.
 
 **Configuración (una sola vez):** en GitHub → *Settings → Secrets and variables → Actions → New repository secret*:
 

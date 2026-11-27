@@ -18,7 +18,7 @@
 - **Disparador principal: cron-job.org**, cada 5 minutos de 08:00 a 23:55 (Europe/Madrid), con `workflow_dispatch` por la API de GitHub (token *fine-grained* solo de este repo, permiso Actions: Read and write; cuerpo `{"ref":"main","inputs":{"dry_run":"false"}}`). Motivo: el `schedule` de GitHub solo lanzaba 3-4 de las 30 pasadas diarias (comprobado el 2026-11-27), y el RSS de "nuevos" de Chollometro solo guarda las 30 últimas ofertas de todas las categorías (de 7 a 16 minutos en horas punta), así que con pasadas espaciadas se perdían casi todas.
 - **Respaldo (schedule de GitHub):** cada 30 minutos, de **09:07 a 23:07, hora de Madrid**. Está escrito en UTC (`7,37 7-21 * * *` y `7 22 * * *`) para cubrir tanto el horario de invierno como el de verano sin depender de la clave `timezone:` (con ella no arrancaban las pasadas automáticas). El bot decide con la hora de Madrid si le toca publicar, y las pasadas fuera de horario terminan en segundos. Se evita la hora en punto, que es cuando GitHub más se retrasa.
 - **Cada ejecución hace `python main.py --ciclo`:**
-  - A las 09:07, **buenos días** con imagen.
+  - En la primera pasada desde las 09:00, **buenos días** con imagen.
   - En cada ejecución, **escaneo de las fuentes** y publicación de **todas** las ofertas nuevas válidas, con **60 s** entre ofertas (máximo 25 por ejecución).
 - **Estado entre ejecuciones:** `offers.json` y `state.json` se guardan en la rama **`estado`** (commit forzado del propio workflow). Solo se guarda cuando se publica de verdad.
 - **Secrets de GitHub:** `TELEGRAM_BOT_TOKEN` y `TELEGRAM_CHAT_ID`. `AMAZON_PARTNER_TAG` va vacío en el workflow (afiliación desactivada).
@@ -37,7 +37,7 @@ El bot no depende de una sola web. Cada fuente implementa `find_offers(limit, is
 
 | Fuente | Estado | Cómo obtiene la oferta |
 |---|---|---|
-| `chollometro` | **Activa en producción** | Recorre los RSS `nuevos` y `hot` y se queda con las ofertas cuya tienda es **Amazon**. Descarta antes las que no son juegos de PS5 o Switch, según el título. De la página de cada oferta lee el objeto JSON de la oferta principal (`threadId`): `price`, `nextBestPrice` (precio anterior), `linkHost`, `status` y si ha caducado. El **ASIN** sale de la redirección `/visit/threadmain/<id>` (`Location` con `amazon.es/dp/ASIN`), sin entrar en Amazon. El título se limpia de precios y cupones. |
+| `chollometro` | **Activa en producción** | Recorre los RSS `nuevos` y `hot` y se queda con las ofertas cuya tienda es **Amazon**. Descarta antes las que no son juegos de PS5, Switch o Xbox, según el título. De la página de cada oferta lee el objeto JSON de la oferta principal (`threadId`): `price`, `nextBestPrice` (precio anterior), `linkHost`, `status` y si ha caducado. El **ASIN** sale de la redirección `/visit/threadmain/<id>` (`Location` con `amazon.es/dp/ASIN`), sin entrar en Amazon. El título se limpia de precios y cupones. |
 | `amazon` | Disponible (solo en casa) | Búsqueda en Amazon.es y verificación del precio en la ficha del producto. |
 
 **Futuras fuentes** (añadir un módulo en `sources/` y registrarlo en `REGISTRY`): otras webs de chollos, la API oficial de Amazon para afiliados (cuando se active la afiliación) o la fuente `amazon` desde un equipo en casa.
@@ -113,8 +113,8 @@ main.py ─► Scheduler (scheduler.py) ─► Pipeline (pipeline.py)
 ## 8. Tecnología y entorno
 
 - Python 3.10+ (en el PC de desarrollo, 3.13). Dependencias: requests, python-dotenv, beautifulsoup4, pillow, tzdata. Para desarrollo, además: pytest, numpy, scipy y opencv-python.
-- Ruta local: `C:\Users\Asus\Desktop\Proyectos\hadouken-zone`. Repositorio: `github.com/Binteak/hadouken-zone-bot` (privado, rama `main`, más la rama `estado` que gestiona el bot).
-- Producción en GitHub Actions (gratis, una vez al día). Alternativa: el PC con Windows encendido.
+- Ruta local: `C:\Users\Asus\Desktop\Proyectos\hadouken-zone`. Repositorio: `github.com/Binteak/hadouken-zone-bot` (público, rama `main`, más la rama `estado` que gestiona el bot).
+- Producción en GitHub Actions (gratis), lanzada cada 5 minutos por cron-job.org. Alternativa: el PC con Windows encendido.
 - Canal: `TELEGRAM_CHAT_ID` (por defecto `@hadoukenzone`).
 
 ## 9. Cómo trabajar en el proyecto
