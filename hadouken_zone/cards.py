@@ -28,6 +28,7 @@ import random
 import urllib.request
 from pathlib import Path
 
+import numpy as np
 from PIL import Image, ImageDraw, ImageFilter, ImageFont, ImageOps
 
 from .config import CARDS_DIR as CARDS_OUTPUT_DIR, FONTS_DIR as FONTS, MASCOT_DIR
@@ -64,6 +65,32 @@ PLATAFORMAS = {
 
 
 # ---------------------------------------------------------------- utilidades
+_MASCOTA_CACHE: dict = {}
+
+
+def _mascota() -> Image.Image | None:
+    """Cabeza de la mascota con la cinta del pelo entera, como en el avatar del canal.
+
+    El PNG original lleva un degradado de transparencia en todo su lado izquierdo, que
+    borra casi toda la cinta. Aquí se recupera la cinta (los colores siguen en el
+    archivo) y solo se suaviza la punta, para que no acabe en un corte seco.
+    """
+    if "img" not in _MASCOTA_CACHE:
+        if not MASCOT_FILE.exists():
+            return None
+        a = np.array(Image.open(MASCOT_FILE).convert("RGBA")).astype(float)
+        w = a.shape[1]
+        zona = int(w * 0.27)                                   # hasta la oreja
+        fondo = np.array([52, 40, 90.0])
+        dist = np.sqrt(((a[:, :zona, :3] - fondo) ** 2).sum(-1))
+        alfa = np.clip((dist - 18) / 22, 0, 1) * 255           # opaco donde hay dibujo
+        x = np.arange(zona)[None, :]
+        punta = np.clip(x / (w * 0.07), 0, 1) ** 1.5           # solo la punta se desvanece
+        mezcla = np.clip((x - zona * 0.85) / (zona * 0.15), 0, 1)   # empalme con el original
+        a[:, :zona, 3] = (alfa * punta) * (1 - mezcla) + a[:, :zona, 3] * mezcla
+        _MASCOTA_CACHE["img"] = Image.fromarray(a.clip(0, 255).astype("uint8"))
+    return _MASCOTA_CACHE["img"]
+
 def _font(nombre: str, size: int) -> ImageFont.FreeTypeFont:
     try:
         return ImageFont.truetype(str(FONTS / nombre), size)
@@ -237,7 +264,7 @@ def generar_tarjeta(titulo: str, plataforma: str, precio_actual: float,
     if descuento is None and precio_anterior and precio_anterior > precio_actual:
         descuento = round((1 - precio_actual / precio_anterior) * 100)
 
-    img = _fondo()
+    img = _fondo(trama=False)                    # sin la trama de puntos de la esquina
     _glow(img, (300, 340), 260, ORANGE, 110)
 
     # --- Carátula (izquierda)
@@ -251,9 +278,8 @@ def generar_tarjeta(titulo: str, plataforma: str, precio_actual: float,
         cover = ImageOps.contain(cover, (cw - 36, ch - 36), Image.LANCZOS)
         img.alpha_composite(cover, (cx0 + (cw - cover.width) // 2, cy0 + (ch - cover.height) // 2))
     else:
-        cab = MASCOT_FILE
-        if cab.exists():
-            h = Image.open(cab).convert("RGBA")
+        h = _mascota()
+        if h is not None:
             h = ImageOps.contain(h, (cw - 80, ch - 80), Image.LANCZOS)
             img.alpha_composite(h, (cx0 + (cw - h.width) // 2, cy0 + (ch - h.height) // 2))
 
@@ -308,9 +334,8 @@ def generar_tarjeta(titulo: str, plataforma: str, precio_actual: float,
     d = ImageDraw.Draw(img)
     d.rectangle((0, H - 70, W, H), fill=(18, 13, 34))
     d.rectangle((0, H - 74, W, H - 70), fill=CYAN)
-    cab = MASCOT_FILE
-    if cab.exists():
-        h = Image.open(cab).convert("RGBA")
+    h = _mascota()
+    if h is not None:
         h = h.resize((int(h.width * 82 / h.height), 82), Image.LANCZOS)
         img.alpha_composite(h, (W - h.width - 28, H - 92))
     d.text((80, H - 35), "HADOUKEN ZONE", font=F_TITULAR(34), fill=WHITE, anchor="lm")

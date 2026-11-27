@@ -1,5 +1,9 @@
 # Registro de cambios
 
+## 1.5.2 — 2026-11-27 · Tarjetas más limpias
+- Las tarjetas de oferta ya no llevan la trama de puntos de la esquina superior derecha.
+- La mascota de las tarjetas (carátula de reserva e icono del pie) muestra la **cinta del pelo entera**, como en el avatar del canal: el PNG original tenía el lado izquierdo medio transparente. Solo se difumina la punta. Nueva dependencia: `numpy`.
+
 ## 1.5.1 — 2026-11-27 · Icono 💥
 - El icono de marca 💥 sustituye a 🔥 en las publicaciones de ofertas (delante del descuento), en el resumen de buenas noches y en el saludo de buenos días.
 
