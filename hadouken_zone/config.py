@@ -99,6 +99,7 @@ class Settings:
     fresh_minutes: int = 30               # una oferta con menos de N min en la fuente es "recién salida"
     fresh_offer_delay_seconds: int = 10   # pausa antes de una oferta recién salida (carrera)
     max_offers_per_cycle: int = 25
+    price_check_minutes: int = 60         # revisar precio/fin de las ofertas del día (0 = no revisar)
 
     searches: tuple = field(default=SEARCHES)
 
@@ -135,4 +136,5 @@ class Settings:
             fresh_minutes=int(g("FRESH_MINUTES", d.fresh_minutes)),
             fresh_offer_delay_seconds=int(g("FRESH_OFFER_DELAY_SECONDS", d.fresh_offer_delay_seconds)),
             max_offers_per_cycle=int(g("MAX_OFFERS_PER_CYCLE", d.max_offers_per_cycle)),
+            price_check_minutes=int(g("PRICE_CHECK_MINUTES", d.price_check_minutes)),
         )

@@ -47,7 +47,7 @@ class Pipeline:
         """Hilo de buenas noches: cabecera con el resumen del día y, como respuestas
         silenciosas, las mejores ofertas publicadas hoy. Devuelve cuántas destaca."""
         s = self.settings
-        records = self.store.published_on(today, tz)
+        records = [r for r in self.store.published_on(today, tz) if not r.get("ended")]
         records.sort(key=lambda r: r.get("last_discount_percent") or 0, reverse=True)
         text = messages.good_night_message(today, records, s.good_night_top)
         if GOOD_NIGHT_IMAGE.exists():
@@ -79,6 +79,12 @@ class Pipeline:
                 log.exception("Error enviando %s en el hilo de buenas noches", offer.asin)
         return sent
 
+    # ------------------------------------------------------------ precio actualizado / terminada
+    def check_prices(self, today, tz) -> dict:
+        from .updates import PriceUpdater
+        updater = PriceUpdater(self.settings, self.telegram, self.store, self.sources, self.offer_link, self.sleep)
+        return updater.run(today, tz)
+
     # ------------------------------------------------------------ ofertas
     def _is_new(self, offer: Offer) -> bool:
         return self.store.should_publish(offer, self.settings.republish_after_days)
@@ -100,17 +106,19 @@ class Pipeline:
                 precio_anterior=offer.previous_price, imagen=offer.image_url,
                 salida=CARDS_DIR / f"{offer.asin}.jpg",
             )
-            self.telegram.send_photo(card, caption)
+            message_id = self.telegram.send_photo(card, caption)
+            with_photo = True
         except TelegramError:
             raise
         except Exception as exc:                 # si falla la imagen, al menos el texto
             log.warning("Tarjeta no disponible para %s (%s); se envía solo texto", offer.asin, exc)
-            self.telegram.send_message(caption, preview=True)
+            message_id = self.telegram.send_message(caption, preview=True)
+            with_photo = False
         age = offer.age_seconds()
         if age is not None:
             log.info("Retraso respecto a la fuente: %s min %02d s (%s)", int(age // 60), int(age % 60), offer.asin)
         if not s.dry_run:
-            self.store.mark_published(offer, url)
+            self.store.mark_published(offer, url, message_id=message_id, with_photo=with_photo)
 
     def collect_offers(self) -> list[Offer]:
         """Ofertas nuevas de todas las fuentes, sin repetir ASIN.

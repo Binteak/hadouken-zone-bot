@@ -312,7 +312,21 @@ class ChollometroSource:
             platform_text=entry["title"],
             verified=True,               # precio publicado y moderado por la comunidad
             source_query=f"chollometro:{entry['thread_id']}",
+            source_url=entry["link"],
         )
+
+    def recheck(self, thread_id: str, url: str | None = None) -> dict | None:
+        """Datos actuales de una oferta ya publicada (precio, precio anterior, si ha terminado).
+
+        No usa la caché de hilos revisados: sirve para enterarse de cambios posteriores.
+        Devuelve None si no se puede leer la página.
+        """
+        resp = self._get(url or f"{BASE}/ofertas/oferta-{thread_id}")   # Chollometro resuelve por el número
+        if resp.status_code == 404:
+            return {"gone": True}
+        if resp.status_code != 200:
+            return None
+        return parse_thread(resp.text, thread_id)
 
     def find_offers(self, limit: int, is_new: Callable[[Offer], bool]) -> list[Offer]:
         offers = []
@@ -322,9 +336,11 @@ class ChollometroSource:
                 if self._already_seen(tid):
                     continue
                 # filtro previo barato con el título del RSS (evita abrir páginas que no son juegos)
-                if rejection_reason(Offer(asin="0000000000", title=entry["title"], price=1, previous_price=2),
-                                    self.settings) in ("no es un videojuego (accesorio/hardware)",
-                                                       "plataforma no reconocida o no objetivo"):
+                motivo = rejection_reason(Offer(asin="0000000000", title=entry["title"], price=1, previous_price=2),
+                                          self.settings)
+                if motivo in ("no es un videojuego (accesorio/hardware)", "plataforma no reconocida o no objetivo"):
+                    # se registra para poder ver qué se queda fuera (p. ej. juegos sin plataforma en el título)
+                    log.info("Descartada por el título (%s) [%s]: %s", motivo, entry.get("store"), entry["title"][:90])
                     self._remember(tid)
                     continue
                 self.sleep(self.delay)

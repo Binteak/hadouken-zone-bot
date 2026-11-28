@@ -68,6 +68,20 @@ class Scheduler:
             return True
         return now - datetime.fromisoformat(last) >= timedelta(minutes=self.settings.scan_interval_minutes)
 
+    def price_check_due(self, now: datetime) -> bool:
+        minutes = self.settings.price_check_minutes
+        if minutes <= 0 or not self.is_active(now):
+            return False
+        if self.state["last_good_night"] == now.date().isoformat():
+            return False
+        last = self.state["last_price_check_at"]
+        if not last:
+            return True
+        try:
+            return now - datetime.fromisoformat(last) >= timedelta(minutes=minutes)
+        except ValueError:
+            return True
+
     # ------------------------------------------------------------ ejecución
     def tick(self, ignore_interval: bool = False) -> list[str]:
         """Ejecuta lo que toque ahora. Devuelve las acciones realizadas (útil en tests).
@@ -101,6 +115,15 @@ class Scheduler:
             self.state.set("last_scan_at", now.isoformat())   # el intervalo cuenta desde el inicio
             self.pipeline.run_scan()
             done.append("scan")
+
+        now = self.clock()
+        if self.price_check_due(now):
+            self.state.set("last_price_check_at", now.isoformat())
+            try:
+                self.pipeline.check_prices(now.date(), self.tz)
+                done.append("price_check")
+            except Exception:
+                log.exception("Error revisando los precios de las ofertas publicadas")
         return done
 
     def run_forever(self) -> None:

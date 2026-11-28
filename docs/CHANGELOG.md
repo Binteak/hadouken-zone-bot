@@ -1,5 +1,18 @@
 # Registro de cambios
 
+## 1.8.0 — 2026-11-28 · Precio actualizado y oferta terminada
+- Motivo: el Final Fantasy VII Remake Intergrade se publicó a 29,90 € (el precio de Chollometro en ese momento) y luego la oferta pasó a 18,99 €; el bot no lo veía porque cada oferta se lee una sola vez.
+- Al publicar se guarda el **`message_id`** del mensaje y la oferta de origen (`source`, `source_url`) en `offers.json`.
+- **Cada hora** (`PRICE_CHECK_MINUTES`, 60; 0 = desactivado) se vuelven a abrir en Chollometro las ofertas publicadas hoy (`hadouken_zone/updates.py`, `ChollometroSource.recheck`, sin pasar por la caché de revisadas) y se edita su mensaje:
+  - **Precio distinto** → tarjeta y texto nuevos (`editMessageMedia`) con «🔄 Precio actualizado (antes X)». El historial guarda el precio nuevo.
+  - **Terminada** (caducada, posiblemente caducada o borrada) → «❌ Oferta terminada» encima del texto (`editMessageCaption`).
+  - **Sube y ya no tiene descuento** → «❌ Ya no está en oferta (ahora X)».
+  - Mensaje borrado a mano del canal → se deja de revisar. «message is not modified» no es un error.
+- El hilo de **buenas noches** deja fuera las ofertas terminadas y usa los precios actualizados.
+- Solo se pueden editar las ofertas publicadas desde esta versión (las anteriores no guardaban el `message_id`).
+- **Diagnóstico de plataformas:** las ofertas que se descartan solo por el título del RSS (sin plataforma reconocida o accesorio) quedan en el registro («Descartada por el título…»), para ver si se pierden juegos sin plataforma en el título.
+- 188 tests (27 nuevos).
+
 ## 1.7.2 — 2026-11-28 · Cabeceras de buenos días y buenas noches a juego
 - **Buenos días** con las cinco plataformas en dos filas (PS5, PS4, Xbox / Switch, Switch 2) y las mismas etiquetas que las tarjetas (PS5 blanca, Switch 2 con el «2» en círculo). Antes solo salían PS5 (aún en azul) y Switch. No tapan la mascota.
 - **Buenas noches** con el mismo estilo de letra que buenos días: texto «pegatina» con degradado, contorno grueso y sombra de color desplazada (`hzlib.sticker_text`), mismas posiciones y tamaños. Sombras como en buenos días: «BUENAS» naranja (como «BUENOS») y «NOCHES» cian (como «DÍAS»).
