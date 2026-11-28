@@ -146,7 +146,17 @@ def generar(salida: Path, offer: Offer = OFERTA) -> Path:
     return Path(salida)
 
 
+def ruta_segura(nombre: str) -> Path:
+    """Solo un nombre de archivo .mp4 dentro de la carpeta actual (sin rutas)."""
+    base = Path.cwd().resolve()
+    ruta = (base / Path(nombre).name).resolve()
+    if ruta.parent != base or ruta.suffix.lower() != ".mp4":
+        sys.exit("La salida tiene que ser un nombre de archivo .mp4, sin carpetas.")
+    return ruta
+
+
 def enviar(video: Path, offer: Offer = OFERTA) -> None:
+    video = ruta_segura(video.name)
     token = os.environ["TELEGRAM_BOT_TOKEN"]
     api = f"https://api.telegram.org/bot{token}"
     updates = requests.get(f"{api}/getUpdates", params={"limit": 100}, timeout=30).json().get("result", [])
@@ -170,6 +180,6 @@ if __name__ == "__main__":
     p.add_argument("--salida", default="tarjeta_animada.mp4")
     p.add_argument("--enviar", action="store_true")
     a = p.parse_args()
-    v = generar(Path(a.salida))
+    v = generar(ruta_segura(a.salida))
     if a.enviar:
         enviar(v)
