@@ -49,7 +49,7 @@ El bot no depende de una sola web. Cada fuente implementa `find_offers(limit, is
 Una oferta solo se publica si cumple **todas** estas condiciones (`hadouken_zone/rules.py`):
 
 1. Es un **videojuego** de **PS5**, **PS4**, **Nintendo Switch**, **Switch 2** o **Xbox** (una sola plataforma «Xbox» para Series X|S y Xbox One; más adelante se podrán diferenciar). Cada una se puede desactivar: `INCLUDE_PS4`, `INCLUDE_SWITCH_2`, `INCLUDE_XBOX`. La plataforma se detecta en el título o en la ficha. «PS4/PS5» cuenta como PS5. Se descartan los títulos que mencionan otras combinaciones de plataformas (p. ej. «PS5 / Xbox») y PC.
-2. **No es un accesorio ni hardware**: mandos, auriculares, consolas, cargadores, fundas, amiibo, tarjetas regalo, suscripciones (PS Plus, Switch Online, Game Pass)…
+2. **No es un accesorio ni hardware**: mandos, auriculares, consolas, cargadores, fundas, amiibo, tarjetas regalo, suscripciones (PS Plus, Switch Online, Game Pass) y periféricos de informática, redes y audio (switches de red, hubs, docks, ratones, teclados, altavoces…)…
 3. Está **disponible**.
 4. Tiene **precio actual y precio anterior válidos**, y el actual es menor que el anterior.
 5. **Descuento ≥ 15 %** (`MIN_DISCOUNT_PERCENT`; era 20 % hasta la versión 1.2.0, rebajado por decisión del titular para tener más volumen).

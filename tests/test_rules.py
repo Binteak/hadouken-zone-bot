@@ -51,6 +51,43 @@ def test_is_excluded(title, excluded):
     assert is_excluded(title) is excluded
 
 
+# Periféricos que se colaron el 2026-11-24/27 (títulos reales de Chollometro)
+@pytest.mark.parametrize("title", [
+    "Link DGS-105GL Switch Gigabit 5 Puertos, sin gestión, 1000 megas por Puerto, Ethernet LAN, RJ-45, Plug&Play",
+    "Sony BRAVIA Theatre U Dolby Atmos Altavoz de Cuello, Bluetooth, conexión multipunto, función Gaming PS5, 360 Spatial Sound, 12H Autonomía",
+    "8Bitdo Retro R8 Mouse with Paw 3395 Optical Sensor dpi 26K, Wireless 4K - Xbox Edition",
+    "Dock para Nintendo Switch con HDMI y USB-C",
+    "Hub USB 4 puertos PS5",
+    "Teclado gaming Xbox",
+    "Ventilador de refrigeración para PS5",
+])
+def test_perifericos_excluidos(title):
+    assert is_excluded(title) is True
+
+
+# Juegos que ya se publicaron (y otros con palabras parecidas) deben seguir pasando
+@pytest.mark.parametrize("title", [
+    "Cuphead switch",
+    "Hot Blood (Nintendo Switch) Game including 2 keyrings",
+    "ChromaGun 2: Dye Hard - Switch 2",
+    "Little Witch Nobeta - Limited Edition (PS4)",
+    "Videojuego Battlefield 6 Standard Edition PS5 (Físico, Castellano)",
+    "Juego Kingdom Come Deliverance Royal Edition (PS5",
+    "Hunter x Hunter Nen x Impact Limited Edition PS5",
+    "Suikoden 1 & 2 HD Remaster: Day 1 - Switch",
+    "Mouse: P.I. for Hire - PS5",
+    "Disney Epic Mickey: Rebrushed - Switch",
+])
+def test_juegos_siguen_pasando(title):
+    assert is_excluded(title) is False
+
+
+def test_switch_de_red_se_descarta_en_rejection_reason(settings):
+    offer = make(asin="B08W3SPNH7", title="Link DGS-105GL Switch Gigabit 5 Puertos, Ethernet LAN", price=9.9,
+                 previous_price=19.9)
+    assert rejection_reason(offer, settings) == "no es un videojuego (accesorio/hardware)"
+
+
 def make(**kw):
     base = dict(asin="B0TSTPS501", title="Astro Bot PS5", price=35.0, previous_price=70.0)
     base.update(kw)

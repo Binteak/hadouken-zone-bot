@@ -1,5 +1,11 @@
 # Registro de cambios
 
+## 1.7.1 — 2026-11-28 · Fuera periféricos que no son juegos
+- Más palabras de accesorios y hardware en `rules.py` (`EXCLUDED_WORDS`): informática y redes (gigabit, ethernet, puertos, USB, HDMI, dock, hub, Bluetooth, wireless, dpi, teclado, monitor…), audio e imagen (altavoz, barra de sonido, televisor, proyector) y otros (ventilador, power bank, estuche, mochila).
+- Motivo: se colaron un switch de red TP-Link («Switch Gigabit 5 Puertos», tomado por Nintendo Switch), un altavoz de cuello Sony BRAVIA («función Gaming PS5») y un ratón 8BitDo («Xbox Edition»).
+- «mouse» y «ratón» no se excluyen solos, para no perder juegos como «Mouse: P.I. for Hire» o los de Mickey Mouse.
+- Comprobado contra el historial real: de 30 publicaciones solo se descartan esas 3; los 27 juegos siguen pasando. 161 tests (18 nuevos).
+
 ## 1.7.0 — 2026-11-28 · Otras tiendas
 - La fuente `chollometro` acepta también ofertas de **otras tiendas** (`STORES`: Amazon, MediaMarkt, PcComponentes, El Corte Inglés, Fnac, GAME, Carrefour, Xtralife, Worten, Alcampo). AliExpress y el resto siguen fuera.
 - Enlace **directo a la tienda**, sacado de la redirección de Chollometro: se desenvuelven las redes de afiliación (p. ej. Awin) y se quitan los parámetros de seguimiento. Nunca se enlaza a Chollometro.
