@@ -1,7 +1,7 @@
 # Contexto del proyecto: Hadouken Zone
 
 > Documento maestro del proyecto. Es la referencia para cualquier persona o asistente (Claude) que trabaje en él.
-> Última actualización: 2026-11-27 · versión 1.5.0
+> Última actualización: 2026-11-28 · versión 1.6.0
 
 ## 1. Qué es
 
@@ -17,7 +17,8 @@
 - **Repositorio público:** `Binteak/hadouken-zone-bot` (los secrets no se ven). Workflow: `.github/workflows/publicar_ofertas.yml`.
 - **Disparador principal: cron-job.org**, cada 5 minutos de 08:00 a 23:55 (Europe/Madrid), con `workflow_dispatch` por la API de GitHub (token *fine-grained* solo de este repo, permiso Actions: Read and write; cuerpo `{"ref":"main","inputs":{"dry_run":"false"}}`). Motivo: el `schedule` de GitHub solo lanzaba 3-4 de las 30 pasadas diarias (comprobado el 2026-11-27), y el RSS de "nuevos" de Chollometro solo guarda las 30 últimas ofertas de todas las categorías (de 7 a 16 minutos en horas punta), así que con pasadas espaciadas se perdían casi todas.
 - **Respaldo (schedule de GitHub):** cada 30 minutos, de **09:07 a 23:07, hora de Madrid**. Está escrito en UTC (`7,37 7-21 * * *` y `7 22 * * *`) para cubrir tanto el horario de invierno como el de verano sin depender de la clave `timezone:` (con ella no arrancaban las pasadas automáticas). El bot decide con la hora de Madrid si le toca publicar, y las pasadas fuera de horario terminan en segundos. Se evita la hora en punto, que es cuando GitHub más se retrasa.
-- **Cada ejecución hace `python main.py --ciclo`:**
+- **Modo vigilancia (1.6.0):** cada ejecución lanza `scripts/vigilar.sh`, que repite `python main.py --ciclo` cada 45 s (`WATCH_INTERVAL_SECONDS`) hasta 330 min (`WATCH_MINUTES`) o hasta las 23:35, y guarda el estado en la rama `estado` tras cada pasada con cambios. Los lanzamientos de cron-job.org que llegan mientras tanto esperan en cola (`concurrency`) y solo se conserva el último. Objetivo: publicar antes que otros canales que leen las mismas fuentes.
+- **Cada pasada (`python main.py --ciclo`):**
   - En la primera pasada desde las 09:00, **buenos días** con imagen.
   - En la primera pasada desde las 23:00 (`GOOD_NIGHT_TIME`), **hilo de buenas noches**: cabecera con el resumen del día y las `GOOD_NIGHT_TOP` (3) mejores ofertas publicadas ese día como respuestas sin sonido (`reply_parameters` + `disable_notification`). Se marca en `state.json` (`last_good_night`) y, a partir de ahí, no se publican más ofertas hasta el día siguiente.
   - En cada ejecución, **escaneo de las fuentes** y publicación de **todas** las ofertas nuevas válidas, con **60 s** entre ofertas (máximo 25 por ejecución).
@@ -56,7 +57,7 @@ Una oferta solo se publica si cumple **todas** estas condiciones (`hadouken_zone
 7. **Precio comprobado según la fuente:** con la fuente `amazon` se abre la ficha `/dp/ASIN` y su precio manda. Con `chollometro` se usan el precio y el precio anterior publicados en la oferta (moderada por la comunidad) y se descartan las caducadas. Si una oferta no tiene precio anterior, no se publica, porque el descuento no se puede comprobar.
 8. **Sin duplicados:** no se vuelve a publicar un ASIN durante `REPUBLISH_AFTER_DAYS` (7) días, salvo que su precio baje al menos otro 5 %. El historial está en `data/offers.json`.
 
-Las ofertas de cada escaneo se publican de **mayor a menor descuento**.
+Orden de publicación de cada escaneo: primero las **recién salidas** (menos de `FRESH_MINUTES`, 30 min, en la fuente), de la más nueva a la más antigua y con `FRESH_OFFER_DELAY_SECONDS` (10 s) de pausa; después el resto, de **mayor a menor descuento**, con 60 s. Cada publicación registra su retraso respecto a la fuente (`publish_delay_seconds`); `py main.py --retrasos` da la mediana.
 
 ## 4. Enlaces de afiliado
 
@@ -150,3 +151,4 @@ main.py ─► Scheduler (scheduler.py) ─► Pipeline (pipeline.py)
 9. Resumen semanal automático ("Top 5 de la semana", la cabecera ya existe).
 10. Panel de estadísticas (ofertas publicadas y clics).
 11. Producto vendible: instalador, licencia y manual de cliente.
+12. **Adelantarse a Chollometro** (fase 2 del reto de rapidez): un equipo en casa de bajo consumo (móvil Android viejo con Termux o Raspberry Pi) que vigile en Amazon una lista de juegos populares y detecte bajadas de precio antes de que la comunidad las publique. Antes, medir con `--retrasos` si con el modo vigilancia ya basta.

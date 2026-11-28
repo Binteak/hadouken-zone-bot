@@ -22,6 +22,9 @@ import json
 import logging
 import re
 import time
+from datetime import datetime, timedelta, timezone
+from email.utils import parsedate_to_datetime
+from pathlib import Path
 from typing import Callable
 from urllib.parse import unquote
 
@@ -30,6 +33,7 @@ import requests
 from ..config import Settings
 from ..models import Offer
 from ..rules import rejection_reason
+from ..storage import _read, _write
 from .base import SourceBlocked
 
 log = logging.getLogger(__name__)
@@ -44,6 +48,7 @@ HEADERS = {
 }
 ASIN_RE = re.compile(r"/(?:dp|gp/product|gp/aw/d)/([A-Z0-9]{10})")
 THREAD_ID_RE = re.compile(r"-(\d+)/?$")
+SEEN_TTL = timedelta(days=2)     # cuánto se recuerda un hilo ya revisado (y descartado o publicado)
 
 
 # ------------------------------------------------------------------ parsers (funciones puras)
@@ -64,8 +69,22 @@ def parse_rss(xml: str) -> list[dict]:
             "title": _tag(item, "title"),
             "link": link,
             "image_url": big_image(image.group(1)) if image else None,
+            "posted_at": parse_pubdate(_tag(item, "pubDate")),
         })
     return entries
+
+
+def parse_pubdate(value: str) -> str | None:
+    """Fecha del RSS (RFC 822, p. ej. 'Mon, 02 Nov 2026 13:16:42 +0100') en ISO UTC."""
+    if not value:
+        return None
+    try:
+        when = parsedate_to_datetime(value)
+    except (TypeError, ValueError):
+        return None
+    if when.tzinfo is None:
+        when = when.replace(tzinfo=timezone.utc)
+    return when.astimezone(timezone.utc).isoformat()
 
 
 def _tag(item: str, name: str) -> str:
@@ -164,12 +183,37 @@ def clean_title(title: str) -> str:
 class ChollometroSource:
     name = "chollometro"
 
-    def __init__(self, settings: Settings, session=None, sleep=time.sleep, delay: float = 1.5):
+    def __init__(self, settings: Settings, session=None, sleep=time.sleep, delay: float = 1.5,
+                 seen_path: Path | None = None, clock=lambda: datetime.now(timezone.utc)):
         self.settings = settings
         self.session = session or requests.Session()
         self.session.headers.update(HEADERS)
         self.sleep = sleep
         self.delay = delay
+        # Hilos ya revisados: no se vuelven a abrir en cada pasada (con pasadas cada
+        # pocos segundos, abrir otra vez cada oferta del RSS retrasaría las nuevas).
+        self.seen_path = seen_path
+        self.clock = clock
+        self.seen: dict[str, str] = _read(seen_path, {}) if seen_path else {}
+
+    def _remember(self, thread_id: str) -> None:
+        self.seen[thread_id] = self.clock().isoformat()
+
+    def _already_seen(self, thread_id: str) -> bool:
+        when = self.seen.get(thread_id)
+        if not when:
+            return False
+        try:
+            return self.clock() - datetime.fromisoformat(when) < SEEN_TTL
+        except ValueError:
+            return False
+
+    def _save_seen(self) -> None:
+        if not self.seen_path:
+            return
+        limit = self.clock() - SEEN_TTL
+        self.seen = {k: v for k, v in self.seen.items() if datetime.fromisoformat(v) >= limit}
+        _write(self.seen_path, self.seen)
 
     def _get(self, url: str, **kw):
         resp = self.session.get(url, timeout=25, **kw)
@@ -222,6 +266,7 @@ class ChollometroSource:
             price=money(data.get("price")),
             previous_price=money(data.get("nextBestPrice")),
             image_url=entry.get("image_url"),
+            posted_at=entry.get("posted_at"),
             platform_text=entry["title"],
             verified=True,               # precio publicado y moderado por la comunidad
             source_query=f"chollometro:{entry['thread_id']}",
@@ -229,27 +274,38 @@ class ChollometroSource:
 
     def find_offers(self, limit: int, is_new: Callable[[Offer], bool]) -> list[Offer]:
         offers = []
-        for entry in self.candidates():
-            # filtro previo barato con el título del RSS (evita abrir páginas que no son juegos)
-            if rejection_reason(Offer(asin="0000000000", title=entry["title"], price=1, previous_price=2),
-                                self.settings) in ("no es un videojuego (accesorio/hardware)",
-                                                   "plataforma no reconocida o no objetivo"):
-                continue
-            self.sleep(self.delay)
-            try:
-                offer = self.offer_from_entry(entry)
-            except SourceBlocked:
-                raise
-            except requests.RequestException as exc:
-                log.warning("Chollometro %s: error de red (%s)", entry["thread_id"], exc.__class__.__name__)
-                continue
-            if offer is None:
-                continue
-            reason = rejection_reason(offer, self.settings)
-            if reason:
-                log.info("Descartada %s (%s): %s", offer.asin, offer.title[:50], reason)
-                continue
-            if is_new(offer):
-                offers.append(offer)
+        try:
+            for entry in self.candidates():
+                tid = entry["thread_id"]
+                if self._already_seen(tid):
+                    continue
+                # filtro previo barato con el título del RSS (evita abrir páginas que no son juegos)
+                if rejection_reason(Offer(asin="0000000000", title=entry["title"], price=1, previous_price=2),
+                                    self.settings) in ("no es un videojuego (accesorio/hardware)",
+                                                       "plataforma no reconocida o no objetivo"):
+                    self._remember(tid)
+                    continue
+                self.sleep(self.delay)
+                try:
+                    offer = self.offer_from_entry(entry)
+                except SourceBlocked:
+                    raise
+                except requests.RequestException as exc:
+                    log.warning("Chollometro %s: error de red (%s)", tid, exc.__class__.__name__)
+                    continue          # sin recordar: se reintenta en la próxima pasada
+                if offer is None:
+                    self._remember(tid)
+                    continue
+                reason = rejection_reason(offer, self.settings)
+                if reason:
+                    log.info("Descartada %s (%s): %s", offer.asin, offer.title[:50], reason)
+                    self._remember(tid)
+                    continue
+                if is_new(offer):
+                    offers.append(offer)   # sin recordar hasta que esté publicada
+                else:
+                    self._remember(tid)    # ya publicada: no hace falta volver a abrirla
+        finally:
+            self._save_seen()
         offers.sort(key=lambda o: o.discount_percent or 0, reverse=True)
         return offers[:limit]

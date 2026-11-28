@@ -9,7 +9,7 @@
 | Hora (Madrid) | Acción |
 |---|---|
 | 09:00 | Mensaje de **buenos días** con imagen de cabecera (en la primera pasada desde las 09:00). |
-| Cada 5 min (08:00 – 23:00) | Busca ofertas nuevas en las **fuentes** y publica todas las válidas, con **1 minuto** entre ofertas. Lo lanza **cron-job.org** (ver abajo). |
+| Cada 45 s (08:00 – 23:00) | **Modo vigilancia:** cada ejecución de GitHub se queda hasta ~5 h 30 min buscando ofertas nuevas en las **fuentes** cada 45 s. Las **recién salidas** (menos de 30 min en la fuente) se publican primero, de la más nueva a la más antigua, con **10 s** de pausa; el resto, por descuento y con 1 minuto entre ofertas. Lo lanza **cron-job.org** (ver abajo). |
 | 23:00 | **Hilo de buenas noches**: cabecera con el resumen del día (cuántas ofertas, por plataforma, la mejor) y, como respuestas sin sonido, las **3 mejores ofertas** del día con su tarjeta. Después ya no se publica nada hasta el día siguiente. |
 
 **Fuentes de ofertas** (`hadouken_zone/sources/`, se eligen con `OFFER_SOURCES`):
@@ -73,6 +73,7 @@ py main.py --once          # un escaneo y publicación ahora
 py main.py --buenos-dias   # envía ahora el buenos días
 py main.py --buenas-noches # envía ahora el hilo de buenas noches
 py main.py --test          # mensaje de presentación del canal
+py main.py --retrasos      # cuánto tardamos en publicar desde que la oferta sale en la fuente
 ```
 
 Con `DRY_RUN=true` todo se muestra en la consola y no se publica nada. Para publicar de verdad, pon `DRY_RUN=false`.
@@ -89,6 +90,8 @@ Repositorio público `Binteak/hadouken-zone-bot` (los secrets no son visibles). 
 |---|---|
 | `TELEGRAM_BOT_TOKEN` | El token del bot (el mismo que en tu `.env`) |
 | `TELEGRAM_CHAT_ID` | `@hadoukenzone` (o el ID del canal) |
+
+**Modo vigilancia (1.6.0):** el workflow ejecuta `scripts/vigilar.sh`, que repite `python main.py --ciclo` cada 45 s (`WATCH_INTERVAL_SECONDS`) durante 330 min (`WATCH_MINUTES`) y termina a las 23:35. Tras cada pasada con cambios guarda el estado en la rama `estado` (`scripts/guardar_estado.sh`). Mientras una vigilancia está en marcha, los lanzamientos de cron-job.org esperan en cola y solo se conserva el último, así que en cuanto termina una empieza la siguiente. Al final, el registro muestra el retraso de publicación (`--retrasos`). Una ejecución manual con `dry_run=true` hace una sola pasada, pero espera a que termine la vigilancia en curso.
 
 **Disparador externo (cron-job.org):** el `schedule` de GitHub es poco fiable (en noviembre de 2026 solo lanzaba 3-4 de las 30 pasadas diarias). Por eso un trabajo de **cron-job.org** llama cada 5 minutos, de 08:00 a 23:55 (Europe/Madrid), a la API de GitHub para lanzar el workflow:
 
@@ -126,6 +129,7 @@ Los tests no acceden a internet: el HTML de Amazon y la API de Telegram están s
 | `GOOD_NIGHT_TIME` / `GOOD_NIGHT_TOP` | `23:00` / `3` | Hora del hilo de buenas noches (vacío = desactivado) y ofertas que destaca |
 | `SCAN_INTERVAL_MINUTES` | `30` | Minutos entre escaneos |
 | `OFFER_DELAY_SECONDS` | `60` | Segundos entre ofertas |
+| `FRESH_MINUTES` / `FRESH_OFFER_DELAY_SECONDS` | `30` / `10` | Una oferta con menos de N min en la fuente es «recién salida»: va primero y con pausa corta |
 | `MAX_OFFERS_PER_CYCLE` | `25` | Límite por escaneo |
 | `MIN_DISCOUNT_PERCENT` | `15` | Descuento mínimo |
 | `REPUBLISH_AFTER_DAYS` | `7` | No repetir un producto antes de N días (salvo si baja otro 5 %) |

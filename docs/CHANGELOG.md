@@ -1,5 +1,12 @@
 # Registro de cambios
 
+## 1.6.0 — 2026-11-28 · Publicar antes que la competencia
+- **Modo vigilancia en GitHub Actions** (`scripts/vigilar.sh`): una ejecución se queda hasta ~5 h 30 min y escanea cada **45 s**, en vez de una pasada en frío cada 5 min (se perdían de 1 a 6 minutos por pasada). El estado se guarda tras cada pasada con cambios (`scripts/guardar_estado.sh`). Coste: 0 € (repositorio público).
+- **Las ofertas recién salidas van primero** (`FRESH_MINUTES`, 30): de la más nueva a la más antigua y con **10 s** de pausa (`FRESH_OFFER_DELAY_SECONDS`). Antes se ordenaba todo por descuento con 60 s entre ofertas, y una oferta nueva podía esperar varios minutos detrás de otras más viejas.
+- **Medición del retraso:** la fuente `chollometro` lee la fecha de publicación del RSS (`pubDate`). Cada publicación registra cuánto ha tardado (`source_posted_at`, `publish_delay_seconds` en `offers.json`) y lo muestra en el log. Nuevo `py main.py --retrasos` (mediana, media, mín. y máx. de hoy y de 7 días); el workflow lo muestra al terminar.
+- **Caché de hilos revisados** (`data/chollometro_vistos.json`, 2 días): ya no se vuelve a abrir en cada pasada la página de las ofertas descartadas o ya publicadas. Así cada pasada solo abre las nuevas y Chollometro recibe muchas menos peticiones.
+- 137 tests (9 nuevos en `tests/test_rapidez.py`).
+
 ## 1.5.2 — 2026-11-27 · Tarjetas más limpias
 - Las tarjetas de oferta ya no llevan la trama de puntos de la esquina superior derecha.
 - La mascota de las tarjetas (carátula de reserva e icono del pie) muestra la **cinta del pelo entera**, como en el avatar del canal: el PNG original tenía el lado izquierdo medio transparente. Solo se difumina la punta. Nueva dependencia: `numpy`.

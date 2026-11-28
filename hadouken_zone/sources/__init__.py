@@ -8,7 +8,7 @@ Se eligen con OFFER_SOURCES en el .env (separadas por comas, en orden de priorid
 
 from __future__ import annotations
 
-from ..config import Settings
+from ..config import DATA_DIR, Settings
 from .amazon import AmazonScraper, CaptchaError
 from .base import OfferSource, SourceBlocked
 from .chollometro import ChollometroSource
@@ -24,7 +24,13 @@ def build_sources(settings: Settings) -> list[OfferSource]:
     if unknown:
         raise ValueError(f"Fuentes desconocidas en OFFER_SOURCES: {', '.join(unknown)}. "
                          f"Disponibles: {', '.join(REGISTRY)}")
-    return [REGISTRY[name](settings) for name in settings.offer_sources]
+    sources = []
+    for name in settings.offer_sources:
+        if name == "chollometro":
+            sources.append(ChollometroSource(settings, seen_path=DATA_DIR / "chollometro_vistos.json"))
+        else:
+            sources.append(REGISTRY[name](settings))
+    return sources
 
 
 __all__ = ["AmazonScraper", "CaptchaError", "ChollometroSource", "OfferSource", "SourceBlocked",

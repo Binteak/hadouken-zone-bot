@@ -4,7 +4,7 @@ from __future__ import annotations
 
 import logging
 import time
-from datetime import datetime
+from datetime import datetime, timezone
 
 import requests
 
@@ -98,11 +98,18 @@ class Pipeline:
         except Exception as exc:                 # si falla la imagen, al menos el texto
             log.warning("Tarjeta no disponible para %s (%s); se envía solo texto", offer.asin, exc)
             self.telegram.send_message(caption, preview=True)
+        age = offer.age_seconds()
+        if age is not None:
+            log.info("Retraso respecto a la fuente: %s min %02d s (%s)", int(age // 60), int(age % 60), offer.asin)
         if not s.dry_run:
             self.store.mark_published(offer, url)
 
     def collect_offers(self) -> list[Offer]:
-        """Ofertas nuevas de todas las fuentes, sin repetir ASIN, de mayor a menor descuento."""
+        """Ofertas nuevas de todas las fuentes, sin repetir ASIN.
+
+        Primero las recién salidas (de la más nueva a la más antigua), porque ahí se compite
+        con otros canales por ser el primero. Después el resto, de mayor a menor descuento.
+        """
         limit = self.settings.max_offers_per_cycle
         found: dict[str, Offer] = {}
         for source in self.sources:
@@ -121,8 +128,18 @@ class Pipeline:
             log.info("Fuente %s: %s ofertas válidas", source.name, len(offers))
             for offer in offers:
                 found.setdefault(offer.asin, offer)
-        offers = sorted(found.values(), key=lambda o: o.discount_percent or 0, reverse=True)
-        return offers[:limit]
+        now = datetime.now(timezone.utc)
+        fresh_minutes = self.settings.fresh_minutes
+        fresh = [o for o in found.values() if o.is_fresh(fresh_minutes, now)]
+        rest = [o for o in found.values() if not o.is_fresh(fresh_minutes, now)]
+        fresh.sort(key=lambda o: o.age_seconds(now))
+        rest.sort(key=lambda o: o.discount_percent or 0, reverse=True)
+        return (fresh + rest)[:limit]
+
+    def _delay_before(self, offer: Offer) -> int:
+        if offer.is_fresh(self.settings.fresh_minutes):
+            return self.settings.fresh_offer_delay_seconds
+        return self.settings.offer_delay_seconds
 
     def run_scan(self) -> int:
         """Un ciclo completo. Devuelve cuántas ofertas se han publicado."""
@@ -142,7 +159,7 @@ class Pipeline:
             except Exception:
                 log.exception("Error publicando %s", offer.asin)
             if index < len(offers) - 1:
-                self.sleep(self.settings.offer_delay_seconds)
+                self.sleep(self._delay_before(offers[index + 1]))
 
         log.info("Ciclo terminado en %ss: %s publicadas", int((datetime.now() - started).total_seconds()), published)
         return published

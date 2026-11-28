@@ -90,6 +90,8 @@ class Settings:
     good_night_top: int = 3                      # ofertas destacadas en el hilo
     scan_interval_minutes: int = 30
     offer_delay_seconds: int = 60
+    fresh_minutes: int = 30               # una oferta con menos de N min en la fuente es "recién salida"
+    fresh_offer_delay_seconds: int = 10   # pausa antes de una oferta recién salida (carrera)
     max_offers_per_cycle: int = 25
 
     searches: tuple = field(default=SEARCHES)
@@ -123,5 +125,7 @@ class Settings:
             good_night_top=int(g("GOOD_NIGHT_TOP", d.good_night_top)),
             scan_interval_minutes=int(g("SCAN_INTERVAL_MINUTES", d.scan_interval_minutes)),
             offer_delay_seconds=int(g("OFFER_DELAY_SECONDS", d.offer_delay_seconds)),
+            fresh_minutes=int(g("FRESH_MINUTES", d.fresh_minutes)),
+            fresh_offer_delay_seconds=int(g("FRESH_OFFER_DELAY_SECONDS", d.fresh_offer_delay_seconds)),
             max_offers_per_cycle=int(g("MAX_OFFERS_PER_CYCLE", d.max_offers_per_cycle)),
         )
