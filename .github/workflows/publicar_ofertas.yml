@@ -1,21 +1,23 @@
 # Hadouken Zone - publicación automática en Telegram (GitHub Actions)
 #
-# Cada 30 minutos entre las 09:07 y las 23:07 (hora de Madrid) ejecuta una pasada del bot
-# (python main.py --ciclo):
-#   - 09:07: mensaje de buenos días con imagen
-#   - cada pasada: busca ofertas nuevas en las fuentes (OFFER_SOURCES, por defecto Chollometro)
-#     y publica todas las válidas, con 60 s entre ofertas
+# MODO VIGILANCIA (desde la 1.6.0): cada ejecución se queda hasta ~5 h 30 min repitiendo
+# "python main.py --ciclo" cada 45 s (scripts/vigilar.sh), en vez de una sola pasada.
+#   - En la primera pasada desde las 09:00: buenos días con imagen.
+#   - En cada pasada: busca ofertas nuevas en las fuentes (OFFER_SOURCES, por defecto
+#     Chollometro) y publica las válidas. Las recién salidas van primero, con 10 s de pausa.
+#   - 23:00: hilo de buenas noches. A las 23:35 la vigilancia termina.
 #
-# El historial de ofertas publicadas y el estado se guardan en la rama "estado",
-# para no repetir ofertas ni el buenos días entre ejecuciones.
+# El historial, el estado y los hilos ya revisados se guardan en la rama "estado" tras cada
+# pasada en la que cambien, para no repetir ofertas ni mensajes entre ejecuciones.
 #
 # Secrets necesarios (Settings > Secrets and variables > Actions):
 #   TELEGRAM_BOT_TOKEN, TELEGRAM_CHAT_ID
-# Disparador principal: cron-job.org lanza este workflow cada 5 min (08:00-23:55, Madrid)
-#   con workflow_dispatch y dry_run=false (ver README). El schedule de abajo es solo respaldo:
-#   GitHub lanzaba 3-4 de las 30 pasadas diarias.
+# Disparador principal: cron-job.org lanza este workflow con workflow_dispatch y dry_run=false
+#   (ver README). Mientras una vigilancia está en marcha, los lanzamientos nuevos esperan en
+#   cola (concurrency) y solo se queda el último: en cuanto termina una, empieza la siguiente.
+#   El schedule de abajo es solo respaldo.
 # Ejecución manual: pestaña Actions > "Publicar ofertas" > Run workflow
-#   (por defecto en DRY_RUN: muestra el resultado en el registro sin publicar).
+#   (por defecto en DRY_RUN: una sola pasada que muestra el resultado sin publicar).
 
 name: Publicar ofertas
 
@@ -44,7 +46,7 @@ permissions:
 jobs:
   publicar:
     runs-on: ubuntu-latest
-    timeout-minutes: 60
+    timeout-minutes: 350
     env:
       TELEGRAM_BOT_TOKEN: ${{ secrets.TELEGRAM_BOT_TOKEN }}
       TELEGRAM_CHAT_ID: ${{ secrets.TELEGRAM_CHAT_ID }}
@@ -54,6 +56,9 @@ jobs:
       TIMEZONE: Europe/Madrid
       OFFER_SOURCES: chollometro
       PYTHONUTF8: "1"
+      # Vigilancia: en simulación, una sola pasada
+      WATCH_MINUTES: ${{ (github.event_name == 'workflow_dispatch' && inputs.dry_run == 'true') && '0' || '330' }}
+      WATCH_INTERVAL_SECONDS: "45"
     steps:
       - name: Descargar el código
         uses: actions/checkout@v5
@@ -74,6 +79,7 @@ jobs:
             git fetch --depth=1 origin estado
             git show origin/estado:offers.json > data/offers.json || rm -f data/offers.json
             git show origin/estado:state.json  > data/state.json  || rm -f data/state.json
+            git show origin/estado:chollometro_vistos.json > data/chollometro_vistos.json || rm -f data/chollometro_vistos.json
             echo "Estado recuperado."
           else
             echo "Primera ejecución: sin estado previo."
@@ -83,23 +89,21 @@ jobs:
         if: ${{ env.DRY_RUN == 'false' }}
         run: python main.py --verificar
 
-      - name: Ejecutar el bot (una pasada)
-        run: python main.py --ciclo
+      - name: Vigilar y publicar (pasadas cada 45 s)
+        env:
+          SAVE_STATE: ${{ env.DRY_RUN == 'false' }}
+          GH_TOKEN: ${{ github.token }}
+        run: scripts/vigilar.sh
 
       - name: Guardar el estado (solo si se ha publicado de verdad)
         if: ${{ always() && env.DRY_RUN == 'false' }}
-        run: |
-          set -e
-          mkdir -p /tmp/estado && cd /tmp/estado
-          git init -q -b estado
-          cp "$GITHUB_WORKSPACE"/data/*.json . 2>/dev/null || true
-          if [ -z "$(ls -A)" ]; then echo "No hay estado que guardar."; exit 0; fi
-          git config user.name  "hadouken-bot"
-          git config user.email "hadouken-bot@users.noreply.github.com"
-          git add -A
-          git commit -q -m "Estado $(date -u +%Y-%m-%dT%H:%MZ)"
-          git push -q -f "https://x-access-token:${{ github.token }}@github.com/${{ github.repository }}.git" estado
-          echo "Estado guardado en la rama 'estado'."
+        env:
+          GH_TOKEN: ${{ github.token }}
+        run: scripts/guardar_estado.sh
+
+      - name: Retraso de publicación respecto a la fuente
+        if: always()
+        run: python main.py --retrasos || true
 
       - name: Guardar registros (diagnóstico)
         if: always()

@@ -23,6 +23,22 @@ class Offer:
     verified: bool = False               # precios confirmados en la ficha del producto
     source_query: str = ""
     found_at: str = field(default_factory=utcnow_iso)
+    posted_at: str | None = None         # cuándo apareció en la fuente (ISO, UTC); None = desconocido
+
+    def age_seconds(self, now: datetime | None = None) -> float | None:
+        """Segundos desde que la oferta apareció en la fuente (None si no se sabe)."""
+        if not self.posted_at:
+            return None
+        try:
+            posted = datetime.fromisoformat(self.posted_at)
+        except ValueError:
+            return None
+        return ((now or datetime.now(timezone.utc)) - posted).total_seconds()
+
+    def is_fresh(self, fresh_minutes: int, now: datetime | None = None) -> bool:
+        """Recién salida en la fuente: es una carrera contra otros canales."""
+        age = self.age_seconds(now)
+        return age is not None and age <= fresh_minutes * 60
 
     @property
     def discount_percent(self) -> int | None:

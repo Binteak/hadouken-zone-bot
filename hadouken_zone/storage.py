@@ -74,6 +74,8 @@ class OfferStore:
             last_published_price=offer.price,
             last_previous_price=offer.previous_price,
             last_discount_percent=offer.discount_percent,
+            source_posted_at=offer.posted_at,
+            publish_delay_seconds=None if offer.age_seconds() is None else round(offer.age_seconds()),
         )
         record["times_published"] = record.get("times_published", 0) + 1
         self.save()
@@ -81,6 +83,16 @@ class OfferStore:
     def save(self) -> None:
         self.data["updated_at"] = utcnow_iso()
         _write(self.path, self.data)
+
+
+def delay_stats(records: list[dict]) -> dict | None:
+    """Retraso (s) entre la aparición en la fuente y la publicación: n, media, mediana, mín., máx."""
+    delays = sorted(r["publish_delay_seconds"] for r in records if r.get("publish_delay_seconds") is not None)
+    if not delays:
+        return None
+    n = len(delays)
+    median = delays[n // 2] if n % 2 else (delays[n // 2 - 1] + delays[n // 2]) / 2
+    return {"n": n, "mean": sum(delays) / n, "median": median, "min": delays[0], "max": delays[-1]}
 
 
 class StateStore:

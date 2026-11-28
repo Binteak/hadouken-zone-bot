@@ -8,6 +8,7 @@
     py main.py --buenas-noches Envía ahora el hilo de buenas noches (resumen del día)
     py main.py --test          Envía el mensaje de presentación del canal
     py main.py --verificar     Comprueba el token y el canal de Telegram sin publicar nada
+    py main.py --retrasos      Muestra cuánto tardamos en publicar desde que la oferta sale en la fuente
 
 Con DRY_RUN=true en .env todo se muestra en consola y no se publica nada.
 """
@@ -35,6 +36,7 @@ def main() -> int:
     group.add_argument("--buenas-noches", action="store_true", help="envía el hilo de buenas noches ahora")
     group.add_argument("--test", action="store_true", help="envía el mensaje de presentación")
     group.add_argument("--verificar", action="store_true", help="comprueba token y canal sin publicar")
+    group.add_argument("--retrasos", action="store_true", help="retraso medio de publicación (hoy y 7 días)")
     args = parser.parse_args()
 
     setup_logging()
@@ -42,6 +44,9 @@ def main() -> int:
     settings = Settings.from_env()
     log.info("HADOUKEN ZONE v%s | DRY_RUN=%s | fuentes: %s", __version__, settings.dry_run,
              ", ".join(settings.offer_sources))
+
+    if args.retrasos:
+        return show_delays(settings)
 
     telegram = TelegramClient(settings.telegram_bot_token, settings.telegram_chat_id, settings.dry_run)
 
@@ -83,6 +88,28 @@ def main() -> int:
         Scheduler(settings, pipeline).run_forever()
     except KeyboardInterrupt:
         log.info("Bot detenido por el usuario")
+    return 0
+
+
+def show_delays(settings) -> int:
+    from datetime import timedelta
+
+    from hadouken_zone.storage import OfferStore, delay_stats
+
+    tz = ZoneInfo(settings.timezone)
+    store = OfferStore()
+    today = datetime.now(tz).date()
+    week = []
+    for back in range(7):
+        week += store.published_on(today - timedelta(days=back), tz)
+    for label, records in (("Hoy", store.published_on(today, tz)), ("Últimos 7 días", week)):
+        st = delay_stats(records)
+        if not st:
+            print(f"{label}: sin datos de retraso todavía")
+            continue
+        fmt = lambda s: f"{int(s // 60)} min {int(s % 60):02d} s"
+        print(f"{label}: {st['n']} ofertas | mediana {fmt(st['median'])} | media {fmt(st['mean'])} | "
+              f"mín. {fmt(st['min'])} | máx. {fmt(st['max'])}")
     return 0
 
 
