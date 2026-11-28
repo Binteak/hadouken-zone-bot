@@ -1,0 +1,40 @@
+# Prueba de tarjeta animada: solo a mano, envía el vídeo al chat privado con el bot.
+# No publica en el canal, no toca la rama "estado" y no interfiere con "Publicar ofertas".
+# Antes: abrir el bot en Telegram y mandarle /start.
+
+name: Prueba tarjeta animada
+
+on:
+  workflow_dispatch:
+
+concurrency:
+  group: prueba-tarjeta-animada
+  cancel-in-progress: true
+
+permissions:
+  contents: read
+
+jobs:
+  prueba:
+    runs-on: ubuntu-latest
+    timeout-minutes: 10
+    env:
+      TELEGRAM_BOT_TOKEN: ${{ secrets.TELEGRAM_BOT_TOKEN }}
+      PYTHONUTF8: "1"
+    steps:
+      - uses: actions/checkout@v5
+      - uses: actions/setup-python@v6
+        with:
+          python-version: "3.13"
+          cache: pip
+      - name: Instalar dependencias
+        run: |
+          pip install -r requirements.txt
+          which ffmpeg || (sudo apt-get update -q && sudo apt-get install -y -q ffmpeg)
+      - name: Generar y enviar la tarjeta animada
+        run: python tools/pruebas/tarjeta_animada.py --salida tarjeta_animada.mp4 --enviar
+      - uses: actions/upload-artifact@v4
+        if: always()
+        with:
+          name: tarjeta-animada
+          path: tarjeta_animada*
