@@ -89,7 +89,8 @@ def avatares():
 
 
 # ---------- CABECERAS 1280x720 ----------
-def header(path, kicker, l1, l2, c1, c2, accent, sub=None, pose='head', burst=ORANGE, pills=None, bolts=False):
+def header(path, kicker, l1, l2, c1, c2, accent, sub=None, pose='head', burst=ORANGE, pills=None, bolts=False,
+           plataformas=None):
     W, H = 1280, 720
     img = radial_bg(W, H, center=(960, 360), inner=(92, 76, 150), outer=BG_DARK, radius=900)
     speed_lines(img, (960, 360), n=90, alpha=16, seed=len(l1))
@@ -113,7 +114,9 @@ def header(path, kicker, l1, l2, c1, c2, accent, sub=None, pose='head', burst=OR
             bolt(d, x, yb + 2, 40); x += 48
         d.text((x, yb), sub, font=fb, fill=WHITE)
         yb += 70
-    if pills:
+    if plataformas:                       # mismas etiquetas que las tarjetas, en filas
+        etiquetas_plataforma(img, 72, yb, plataformas)
+    elif pills:
         f = font(30, 'ExtraBold', italic=False, display=False)
         x = 76
         for label, col in pills:
@@ -127,7 +130,7 @@ def cabeceras():
     O = TG / 'cabeceras'
     header(O / 'cabecera_buenos_dias.png', '¡ARRIBA, JUGADORES!', 'BUENOS', 'DÍAS', [YELLOW, ORANGE], [WHITE, (255, 236, 190)],
            ORANGE, sub='Empieza la caza de ofertas', pose='hadouken', burst=YELLOW,
-           pills=[('PS5', PS_BLUE), ('SWITCH', SW_RED)])
+           plataformas=PLATAFORMAS_FILAS)
     header(O / 'cabecera_chollo_del_dia.png', 'HADOUKEN ZONE', 'CHOLLO', 'DEL DÍA', [WHITE, (255, 236, 190)], [YELLOW, ORANGE],
            ORANGE, sub='La mejor oferta de hoy, verificada', pose='hadouken')
     header(O / 'cabecera_oferta_flash.png', '¡SOLO UNAS HORAS!', 'OFERTA', 'FLASH', [WHITE, (255, 236, 190)], [YELLOW, ORANGE],

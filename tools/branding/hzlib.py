@@ -193,6 +193,27 @@ def pill(img, box, fill, text, fnt, txt=WHITE, ink=INK, ink_w=5, radius=None):
     d.text(((x0 + x1) / 2, (y0 + y1) / 2 + 1), text, font=fnt, fill=txt, anchor='mm')
 
 
+# Etiquetas de plataforma de la cabecera: las mismas que las tarjetas (hadouken_zone/cards.py)
+PLATAFORMAS_FILAS = (("ps5", "ps4", "xbox"), ("switch", "switch 2"))
+
+
+def etiquetas_plataforma(img, x, y, filas=PLATAFORMAS_FILAS, sep=18, salto=80):
+    """Dibuja las etiquetas de plataforma en filas y devuelve el borde derecho más lejano."""
+    import sys
+    if str(ROOT) not in sys.path:
+        sys.path.insert(0, str(ROOT))
+    from hadouken_zone.cards import PLATAFORMAS, _etiqueta_plataforma
+    d = ImageDraw.Draw(img)
+    derecha = x
+    for i, fila in enumerate(filas):
+        xx = x
+        for clave in fila:
+            nombre, color, tinta = PLATAFORMAS[clave]
+            xx += _etiqueta_plataforma(d, xx, y + i * salto, nombre, color, tinta) + sep
+        derecha = max(derecha, xx - sep)
+    return derecha
+
+
 def load(name):
     return Image.open(MASCOTA / name).convert('RGBA')
 

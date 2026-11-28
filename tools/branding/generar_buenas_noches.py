@@ -18,7 +18,10 @@ from PIL import Image, ImageDraw, ImageFilter, ImageFont, ImageOps
 ROOT = Path(__file__).resolve().parents[2]
 sys.path.insert(0, str(ROOT))
 from hadouken_zone import cards  # noqa: E402
-from hadouken_zone.cards import H, W, _etiqueta_plataforma, _fondo  # noqa: E402
+from hadouken_zone.cards import H, W, _fondo  # noqa: E402
+
+sys.path.insert(0, str(ROOT / "tools" / "branding"))
+import hzlib  # noqa: E402  (mismo estilo de texto que generar_disenos.header)
 
 B = ROOT / "branding"
 SALIDA = B / "telegram" / "cabeceras" / "cabecera_buenas_noches.png"
@@ -109,20 +112,19 @@ def generar(salida: Path = SALIDA) -> Path:
         img.alpha_composite(capa)
         x, y = x + int(s * 1.1), y - int(s * 0.95)
 
+    # Texto con el mismo estilo y posiciones que la cabecera de buenos días (generar_disenos.header)
+    y = 120
+    hzlib.sticker_text(img, (72, y), "¡A DESCANSAR, JUGADORES!", hzlib.font(44), fill=hzlib.CYAN, ink_w=7, accent=None)
+    hzlib.sticker_text(img, (64, y + 52), "BUENAS", hzlib.font(112), fill=[hzlib.YELLOW, hzlib.ORANGE], ink_w=12,
+                       accent=hzlib.CYAN, accent_off=(7, 9))
+    hzlib.sticker_text(img, (64, y + 168), "NOCHES", hzlib.font(112), fill=[hzlib.WHITE, (255, 236, 190)], ink_w=12,
+                       accent=hzlib.ORANGE, accent_off=(7, 9))
     d = ImageDraw.Draw(img)
-
-    def txt(xy, t, f, fill, sw=8):
-        d.text(xy, t, font=f, fill=fill, stroke_width=sw, stroke_fill=(22, 16, 40))
-    txt((70, 105), "¡A DESCANSAR, JUGADORES!", F("Inter-ExtraBold.otf", 40), CYAN, sw=5)
-    txt((60, 165), "BUENAS", F("InterDisplay-BlackItalic.otf", 128), (255, 128, 36))
-    txt((60, 300), "NOCHES", F("InterDisplay-BlackItalic.otf", 128), (255, 245, 230))
-    d.text((72, 462), "Resumen de las ofertas de hoy", font=F("Inter-Bold.otf", 32), fill=(255, 255, 255))
-    P = cards.PLATAFORMAS
-    for fila, claves in ((525, ["ps5", "ps4", "xbox"]), (605, ["switch", "switch 2"])):
-        x = 72
-        for k in claves:
-            n, c, t = P[k]
-            x += _etiqueta_plataforma(d, x, fila, n, c, t) + 18
+    yb = y + 318
+    d.text((72, yb), "Resumen de las ofertas de hoy", font=hzlib.font(30, "Bold", italic=False, display=False),
+           fill=(255, 255, 255))
+    hzlib.etiquetas_plataforma(img, 72, yb + 70)
+    d = ImageDraw.Draw(img)
     d.rectangle((0, H - 8, W, H), fill=(255, 128, 36))
     salida.parent.mkdir(parents=True, exist_ok=True)
     img.convert("RGB").save(salida)
