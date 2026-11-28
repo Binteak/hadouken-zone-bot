@@ -24,8 +24,19 @@ EXCLUDED_WORDS = (
     "disco duro", "ssd", "tarjeta de memoria", "cámara", "camara", "playstation portal",
     "batería", "bateria", "grip", "adaptador", "nintendo switch online", "playstation plus",
     "ps plus", "game pass", "xbox live",
+    # Informática y redes (p. ej. un «Switch Gigabit 5 Puertos» de red no es una Switch)
+    "gigabit", "ethernet", "rj-45", "rj45", "router", "puerto", "puertos", "usb", "usb-c", "hdmi",
+    "dock", "docking", "hub", "bluetooth", "wifi", "wi-fi", "wireless", "inalámbrico", "inalambrico",
+    "dpi", "sensor óptico", "optical sensor", "teclado", "keyboard", "monitor", "webcam",
+    "micrófono", "microfono", "alfombrilla", "mousepad",
+    # Audio, imagen y otros periféricos
+    "altavoz", "altavoces", "speaker", "barra de sonido", "soundbar", "televisor", "smart tv",
+    "proyector", "ventilador", "refrigeración", "refrigeracion", "power bank", "powerbank",
+    "estuche", "maletín", "maletin", "bolsa de transporte", "mochila",
 )
-# Palabras que solo excluyen si el título no dice que es un juego ("Juego para consola PS5")
+# Palabras que solo excluyen si el título no dice que es un juego ("Juego para consola PS5").
+# «mouse» y «ratón» no se excluyen por juegos como «Mouse: P.I. for Hire» o los de Mickey Mouse;
+# los ratones de verdad caen por «dpi», «wireless», «sensor óptico»…
 SOFT_EXCLUDED_WORDS = ("consola", "memoria", "soporte", "cable")
 GAME_HINTS = ("juego", "videojuego", "edición", "edicion", "edition")
 
