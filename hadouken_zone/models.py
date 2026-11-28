@@ -24,6 +24,12 @@ class Offer:
     source_query: str = ""
     found_at: str = field(default_factory=utcnow_iso)
     posted_at: str | None = None         # cuándo apareció en la fuente (ISO, UTC); None = desconocido
+    store: str = "Amazon"                # tienda de la oferta
+    url: str | None = None               # enlace directo a la tienda (None = enlace de Amazon por ASIN)
+
+    @property
+    def is_amazon(self) -> bool:
+        return self.store.strip().lower() == "amazon"
 
     def age_seconds(self, now: datetime | None = None) -> float | None:
         """Segundos desde que la oferta apareció en la fuente (None si no se sabe)."""

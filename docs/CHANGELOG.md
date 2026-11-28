@@ -1,5 +1,13 @@
 # Registro de cambios
 
+## 1.7.0 — 2026-11-28 · Otras tiendas
+- La fuente `chollometro` acepta también ofertas de **otras tiendas** (`STORES`: Amazon, MediaMarkt, PcComponentes, El Corte Inglés, Fnac, GAME, Carrefour, Xtralife, Worten, Alcampo). AliExpress y el resto siguen fuera.
+- Enlace **directo a la tienda**, sacado de la redirección de Chollometro: se desenvuelven las redes de afiliación (p. ej. Awin) y se quitan los parámetros de seguimiento. Nunca se enlaza a Chollometro.
+- El mensaje muestra la tienda («🛒 MediaMarkt») y «Ver oferta en <tienda>». Fuera de Amazon, sin aviso de afiliado.
+- Las ofertas sin ASIN usan un identificador estable a partir del enlace (`T` + 9 caracteres) para el historial y los duplicados. El historial guarda la tienda.
+- Pendiente: etiqueta de tienda en la tarjeta y regla de «oferta ganadora» entre tiendas.
+- 143 tests.
+
 ## 1.6.0 — 2026-11-28 · Publicar antes que la competencia
 - **Modo vigilancia en GitHub Actions** (`scripts/vigilar.sh`): una ejecución se queda hasta ~5 h 30 min y escanea cada **45 s**, en vez de una pasada en frío cada 5 min (se perdían de 1 a 6 minutos por pasada). El estado se guarda tras cada pasada con cambios (`scripts/guardar_estado.sh`). Coste: 0 € (repositorio público).
 - **Las ofertas recién salidas van primero** (`FRESH_MINUTES`, 30): de la más nueva a la más antigua y con **10 s** de pausa (`FRESH_OFFER_DELAY_SECONDS`). Antes se ordenaba todo por descuento con 60 s entre ofertas, y una oferta nueva podía esperar varios minutos detrás de otras más viejas.
