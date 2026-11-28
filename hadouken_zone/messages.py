@@ -43,7 +43,7 @@ def good_morning_message(d: date, scan_minutes: int = 30, min_discount: int = 20
         "",
         f"Hoy es {fecha_larga(d)} y arrancamos la caza de ofertas de <b>PS5</b>, <b>PS4</b>, <b>Switch</b>, <b>Switch 2</b> y <b>Xbox</b>. 🕹️",
         "",
-        f"🔎 Revisamos Amazon cada <b>{scan_minutes} minutos</b>",
+        f"🔎 Revisamos Amazon y otras tiendas cada <b>{scan_minutes} minutos</b>",
         f"🏷️ Solo descuentos de <b>-{min_discount}% o más</b>, con precio comprobado",
         "🔔 Activa las notificaciones para no perderte nada",
         "",
@@ -105,7 +105,7 @@ def good_night_item(rank: int, offer: Offer, url: str, affiliate: bool = True) -
     lines = [
         f"{medal} <b>-{offer.discount_percent}%</b> · <b>{escape(offer.title)}</b>",
         f"🎮 {escape(offer.platform or '')} · 💶 <b>{precio(offer.price)}</b>  <s>{precio(offer.previous_price)}</s>",
-        f'👉 <a href="{escape(url, quote=True)}">Ver oferta en Amazon</a>',
+        f'👉 <a href="{escape(url, quote=True)}">Ver oferta en {escape(offer.store)}</a>',
     ]
     if affiliate:
         lines.append("<i>Enlace de afiliado</i>")
@@ -117,11 +117,11 @@ def offer_caption(offer: Offer, url: str, affiliate: bool = True) -> str:
     lines = [
         f"💥 <b>-{offer.discount_percent}%</b> · <b>{escape(offer.title)}</b>",
         "",
-        f"🎮 {escape(offer.platform or '')}",
+        f"🎮 {escape(offer.platform or '')} · 🛒 {escape(offer.store)}",
         f"💶 <b>{precio(offer.price)}</b>  <s>{precio(offer.previous_price)}</s>",
         f"💰 Te ahorras {precio(offer.savings)}",
         "",
-        f'👉 <a href="{escape(url, quote=True)}">Ver oferta en Amazon</a>',
+        f'👉 <a href="{escape(url, quote=True)}">Ver oferta en {escape(offer.store)}</a>',
         "",
         f"{tag} #Oferta #HadoukenZone",
     ]
@@ -138,7 +138,7 @@ def test_message(min_discount: int = 15) -> str:
     return (
         "🎮 <b>¡Bienvenidos a HADOUKEN ZONE!</b>\n\n"
         "Aquí encontrarás las mejores ofertas de videojuegos para "
-        "<b>PS5</b>, <b>PS4</b>, <b>Nintendo Switch</b>, <b>Switch 2</b> y <b>Xbox</b> en Amazon.\n\n"
+        "<b>PS5</b>, <b>PS4</b>, <b>Nintendo Switch</b>, <b>Switch 2</b> y <b>Xbox</b> en Amazon y otras tiendas.\n\n"
         "🔎 Revisamos precios durante todo el día\n"
         f"🏷️ Solo descuentos de -{min_discount}% o más, comprobados\n"
         "🔔 Activa las notificaciones\n\n"

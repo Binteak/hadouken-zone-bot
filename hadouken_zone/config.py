@@ -40,6 +40,11 @@ SEARCHES = (
 )
 
 
+# Tiendas aceptadas de Chollometro (nombre de tienda en minúsculas, tal y como lo da el RSS).
+# Solo Amazon da comisión (cuando se active la afiliación); el resto se enlaza sin afiliado.
+DEFAULT_STORES = ("amazon", "mediamarkt", "pccomponentes", "el corte inglés", "fnac", "game",
+                  "carrefour", "xtralife", "worten", "alcampo", "eci")
+
 CHOLLOMETRO_FEEDS = (
     "https://www.chollometro.com/rss/nuevos",
     "https://www.chollometro.com/rss/hot",
@@ -65,6 +70,7 @@ class Settings:
     # Fuentes de ofertas, en orden de prioridad (ver hadouken_zone/sources/)
     offer_sources: tuple = ("chollometro",)
     chollometro_feeds: tuple = field(default=CHOLLOMETRO_FEEDS)
+    stores: tuple = field(default=DEFAULT_STORES)
 
     # Amazon
     amazon_domain: str = "www.amazon.es"
@@ -108,6 +114,7 @@ class Settings:
             telegram_chat_id=g("TELEGRAM_CHAT_ID", "") or "",
             dry_run=_bool(g("DRY_RUN", "true")),
             offer_sources=tuple(x.strip().lower() for x in (g("OFFER_SOURCES", "chollometro") or "chollometro").split(",") if x.strip()),
+            stores=tuple(x.strip().lower() for x in g("STORES", ",".join(DEFAULT_STORES)).split(",") if x.strip()),
             amazon_domain=g("AMAZON_DOMAIN", d.amazon_domain),
             amazon_partner_tag=(g("AMAZON_PARTNER_TAG", "") or "").strip(),
             request_delay_seconds=float(g("REQUEST_DELAY_SECONDS", d.request_delay_seconds)),

@@ -60,11 +60,12 @@ class Pipeline:
         for rank, r in enumerate(records[: s.good_night_top], start=1):
             offer = Offer(asin=r["asin"], title=r.get("title") or "", price=r.get("last_published_price"),
                           previous_price=r.get("last_previous_price"), platform=r.get("platform"),
-                          image_url=r.get("image_url"))
+                          image_url=r.get("image_url"), store=r.get("store") or "Amazon",
+                          url=r.get("url") if (r.get("store") or "Amazon").lower() != "amazon" else None)
             if not offer.discount_percent:
                 continue
-            url = product_url(offer.asin, s.amazon_domain, s.amazon_partner_tag)
-            caption = messages.good_night_item(rank, offer, url, affiliate=bool(s.amazon_partner_tag))
+            url, affiliate = self.offer_link(offer)
+            caption = messages.good_night_item(rank, offer, url, affiliate=affiliate)
             self.sleep(3)
             try:
                 card = generar_tarjeta(
@@ -82,10 +83,17 @@ class Pipeline:
     def _is_new(self, offer: Offer) -> bool:
         return self.store.should_publish(offer, self.settings.republish_after_days)
 
+    def offer_link(self, offer: Offer) -> tuple[str, bool]:
+        """Enlace de la oferta y si es de afiliado (solo Amazon con ID de afiliado)."""
+        s = self.settings
+        if offer.url and not offer.is_amazon:
+            return offer.url, False
+        return product_url(offer.asin, s.amazon_domain, s.amazon_partner_tag), bool(s.amazon_partner_tag)
+
     def publish_offer(self, offer: Offer) -> None:
         s = self.settings
-        url = product_url(offer.asin, s.amazon_domain, s.amazon_partner_tag)
-        caption = messages.offer_caption(offer, url, affiliate=bool(s.amazon_partner_tag))
+        url, affiliate = self.offer_link(offer)
+        caption = messages.offer_caption(offer, url, affiliate=affiliate)
         try:
             card = generar_tarjeta(
                 titulo=offer.title, plataforma=offer.platform, precio_actual=offer.price,

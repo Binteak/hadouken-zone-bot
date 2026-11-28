@@ -68,6 +68,7 @@ class OfferStore:
             asin=offer.asin,
             title=offer.title,
             platform=offer.platform,
+            store=offer.store,
             url=url,
             image_url=offer.image_url,
             last_published_at=now,

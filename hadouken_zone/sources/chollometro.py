@@ -20,13 +20,14 @@ from __future__ import annotations
 import html as html_lib
 import json
 import logging
+import hashlib
 import re
 import time
 from datetime import datetime, timedelta, timezone
 from email.utils import parsedate_to_datetime
 from pathlib import Path
 from typing import Callable
-from urllib.parse import unquote
+from urllib.parse import parse_qs, unquote, urlencode, urlsplit, urlunsplit
 
 import requests
 
@@ -52,12 +53,14 @@ SEEN_TTL = timedelta(days=2)     # cuánto se recuerda un hilo ya revisado (y de
 
 
 # ------------------------------------------------------------------ parsers (funciones puras)
-def parse_rss(xml: str) -> list[dict]:
-    """Entradas del RSS cuya tienda es Amazon: id, título, enlace, precio e imagen."""
+def parse_rss(xml: str, stores=("amazon",)) -> list[dict]:
+    """Entradas del RSS de las tiendas aceptadas: id, tienda, título, enlace, fecha e imagen."""
     entries = []
+    accepted = {s.lower() for s in stores}
     for item in re.findall(r"<item>(.*?)</item>", xml, re.S):
         merchant = re.search(r'<pepper:merchant\b[^>]*\bname="([^"]*)"', item)
-        if not merchant or merchant.group(1).strip().lower() != "amazon":
+        store = html_lib.unescape(merchant.group(1)).strip() if merchant else ""
+        if not store or store.lower() not in accepted:
             continue
         link = _tag(item, "link")
         match = THREAD_ID_RE.search(link)
@@ -66,6 +69,7 @@ def parse_rss(xml: str) -> list[dict]:
         image = re.search(r'<media:content\b[^>]*\burl="([^"]+)"', item)
         entries.append({
             "thread_id": match.group(1),
+            "store": store,
             "title": _tag(item, "title"),
             "link": link,
             "image_url": big_image(image.group(1)) if image else None,
@@ -171,6 +175,31 @@ def asin_from_redirect(location: str) -> str | None:
     return None
 
 
+TRACKING_PARAMS = re.compile(r"^(utm_|tag$|ref|aff|affiliate|awc$|clickid|gclid|fbclid|ranmid|ransite|irclickid|sscid|cjevent|mc_)", re.I)
+
+
+def store_url_from_redirect(location: str) -> str | None:
+    """URL final de la tienda desde la redirección de Chollometro, sin parámetros de seguimiento."""
+    url = location
+    for _ in range(4):        # destino anidado: redirección de Chollometro o red de afiliación (Awin…)
+        query = parse_qs(urlsplit(url).query)
+        inner = next((v[0] for k in ("url", "ued", "murl", "u", "dest", "destination")
+                      for v in [query.get(k)] if v and v[0].startswith("http")), None)
+        if not inner:
+            break
+        url = unquote(inner)
+    parts = urlsplit(url)
+    if parts.scheme not in ("http", "https") or not parts.netloc or parts.netloc.endswith("chollometro.com"):
+        return None
+    query = [(k, v) for k, vals in parse_qs(parts.query).items() for v in vals if not TRACKING_PARAMS.match(k)]
+    return urlunsplit((parts.scheme, parts.netloc, parts.path, urlencode(query), ""))
+
+
+def store_offer_id(url: str) -> str:
+    """Identificador estable de 10 caracteres para una oferta que no es de Amazon (no hay ASIN)."""
+    return "T" + hashlib.sha1(url.encode()).hexdigest()[:9].upper()
+
+
 def clean_title(title: str) -> str:
     """Quita del título lo que añade la comunidad: precios, cupones, '(Precio mínimo)'…"""
     t = re.sub(r"\s*[\(\[][^\)\]]*(€|cup[oó]n|precio|m[ií]nimo|prime|env[ií]o)[^\)\]]*[\)\]]", "", title, flags=re.I)
@@ -226,11 +255,11 @@ class ChollometroSource:
         for feed in self.settings.chollometro_feeds:
             resp = self._get(feed)
             resp.raise_for_status()
-            for entry in parse_rss(resp.text):
+            for entry in parse_rss(resp.text, self.settings.stores):
                 if entry["thread_id"] not in seen:
                     seen.add(entry["thread_id"])
                     entries.append(entry)
-        log.info("Chollometro: %s ofertas de Amazon en los RSS", len(entries))
+        log.info("Chollometro: %s ofertas de tiendas aceptadas en los RSS", len(entries))
         return entries
 
     def offer_from_entry(self, entry: dict) -> Offer | None:
@@ -241,18 +270,29 @@ class ChollometroSource:
         if not data:
             log.warning("Chollometro: no se pudieron leer los datos de %s", entry["link"])
             return None
+        store = entry.get("store") or "Amazon"
+        is_amazon = store.lower() == "amazon"
         host = (data.get("linkHost") or "").lower()
-        if host and "amazon." not in host:
+        if is_amazon and host and "amazon." not in host:
             return None
         if data.get("isExpired") or data.get("isMaybeExpired") or str(data.get("status", "")).lower() == "expired":
             return None
 
         self.sleep(self.delay)
         visit = self._get(f"{BASE}/visit/threadmain/{entry['thread_id']}", allow_redirects=False)
-        asin = asin_from_redirect(visit.headers.get("Location", ""))
-        if not asin:
-            log.debug("Chollometro %s: sin ASIN en la redirección", entry["thread_id"])
-            return None
+        location = visit.headers.get("Location", "")
+        url = None
+        if is_amazon:
+            asin = asin_from_redirect(location)
+            if not asin:
+                log.debug("Chollometro %s: sin ASIN en la redirección", entry["thread_id"])
+                return None
+        else:
+            url = store_url_from_redirect(location)
+            if not url:
+                log.debug("Chollometro %s: sin enlace de tienda en la redirección", entry["thread_id"])
+                return None
+            asin = store_offer_id(url)
 
         def money(v):
             try:
@@ -267,6 +307,8 @@ class ChollometroSource:
             previous_price=money(data.get("nextBestPrice")),
             image_url=entry.get("image_url"),
             posted_at=entry.get("posted_at"),
+            store=store,
+            url=url,
             platform_text=entry["title"],
             verified=True,               # precio publicado y moderado por la comunidad
             source_query=f"chollometro:{entry['thread_id']}",
