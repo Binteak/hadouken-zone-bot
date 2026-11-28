@@ -2,7 +2,7 @@
 
 ## 1.7.2 — 2026-11-28 · Cabeceras de buenos días y buenas noches a juego
 - **Buenos días** con las cinco plataformas en dos filas (PS5, PS4, Xbox / Switch, Switch 2) y las mismas etiquetas que las tarjetas (PS5 blanca, Switch 2 con el «2» en círculo). Antes solo salían PS5 (aún en azul) y Switch. No tapan la mascota.
-- **Buenas noches** con el mismo estilo de letra que buenos días: texto «pegatina» con degradado, contorno grueso y sombra de color desplazada (`hzlib.sticker_text`), mismas posiciones y tamaños.
+- **Buenas noches** con el mismo estilo de letra que buenos días: texto «pegatina» con degradado, contorno grueso y sombra de color desplazada (`hzlib.sticker_text`), mismas posiciones y tamaños. Sombras como en buenos días: «BUENAS» naranja (como «BUENOS») y «NOCHES» cian (como «DÍAS»).
 - Nuevo `hzlib.etiquetas_plataforma()`: las cabeceras dibujan las plataformas con `cards._etiqueta_plataforma`, así que siempre coinciden con las tarjetas.
 
 ## 1.7.1 — 2026-11-28 · Fuera periféricos que no son juegos

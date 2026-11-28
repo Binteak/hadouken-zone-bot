@@ -116,9 +116,9 @@ def generar(salida: Path = SALIDA) -> Path:
     y = 120
     hzlib.sticker_text(img, (72, y), "¡A DESCANSAR, JUGADORES!", hzlib.font(44), fill=hzlib.CYAN, ink_w=7, accent=None)
     hzlib.sticker_text(img, (64, y + 52), "BUENAS", hzlib.font(112), fill=[hzlib.YELLOW, hzlib.ORANGE], ink_w=12,
-                       accent=hzlib.CYAN, accent_off=(7, 9))
+                       accent=hzlib.ORANGE, accent_off=(7, 9))        # como «BUENOS»
     hzlib.sticker_text(img, (64, y + 168), "NOCHES", hzlib.font(112), fill=[hzlib.WHITE, (255, 236, 190)], ink_w=12,
-                       accent=hzlib.ORANGE, accent_off=(7, 9))
+                       accent=hzlib.CYAN, accent_off=(7, 9))          # como «DÍAS»
     d = ImageDraw.Draw(img)
     yb = y + 318
     d.text((72, yb), "Resumen de las ofertas de hoy", font=hzlib.font(30, "Bold", italic=False, display=False),
