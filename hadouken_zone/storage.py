@@ -61,7 +61,7 @@ class OfferStore:
                 out.append(record)
         return out
 
-    def mark_published(self, offer: Offer, url: str) -> None:
+    def mark_published(self, offer: Offer, url: str, message_id=None, with_photo: bool = True) -> None:
         now = utcnow_iso()
         record = self.data["offers"].setdefault(offer.asin, {"first_published_at": now, "times_published": 0})
         record.update(
@@ -77,8 +77,33 @@ class OfferStore:
             last_discount_percent=offer.discount_percent,
             source_posted_at=offer.posted_at,
             publish_delay_seconds=None if offer.age_seconds() is None else round(offer.age_seconds()),
+            # para editar el mensaje después (precio actualizado / oferta terminada)
+            message_id=message_id if isinstance(message_id, int) and not isinstance(message_id, bool) else None,
+            with_photo=with_photo,
+            source=offer.source_query or None,
+            source_url=offer.source_url,
+            ended=False,
         )
         record["times_published"] = record.get("times_published", 0) + 1
+        self.save()
+
+    def mark_updated(self, asin: str, offer: Offer | None = None, ended: bool = False,
+                     message_gone: bool = False) -> None:
+        """Apunta una edición: precio nuevo, oferta terminada o mensaje borrado del canal."""
+        record = self.data["offers"].get(asin)
+        if record is None:
+            return
+        now = utcnow_iso()
+        record["last_checked_at"] = now
+        if message_gone:
+            record["message_id"] = None
+        if ended:
+            record["ended"] = True
+            record["ended_at"] = now
+        if offer is not None:
+            record.update(last_published_price=offer.price, last_previous_price=offer.previous_price,
+                          last_discount_percent=offer.discount_percent, price_updated_at=now)
+            record["times_updated"] = record.get("times_updated", 0) + 1
         self.save()
 
     def save(self) -> None:

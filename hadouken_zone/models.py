@@ -26,6 +26,7 @@ class Offer:
     posted_at: str | None = None         # cuándo apareció en la fuente (ISO, UTC); None = desconocido
     store: str = "Amazon"                # tienda de la oferta
     url: str | None = None               # enlace directo a la tienda (None = enlace de Amazon por ASIN)
+    source_url: str | None = None        # página de la oferta en la fuente (para revisarla después)
 
     @property
     def is_amazon(self) -> bool:

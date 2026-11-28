@@ -15,6 +15,10 @@ class TelegramError(RuntimeError):
     pass
 
 
+class MessageGone(TelegramError):
+    """El mensaje que se quería editar ya no existe (lo han borrado del canal)."""
+
+
 class TelegramClient:
     def __init__(self, token: str, chat_id: str, dry_run: bool = True, session=None):
         self.token = token
@@ -42,17 +46,55 @@ class TelegramClient:
         chat = self._call("getChat", {"chat_id": self.chat_id})["result"]
         return "@" + bot.get("username", "?"), chat.get("title") or chat.get("username") or str(chat.get("id"))
 
-    def send_message(self, text: str, preview: bool = False) -> bool:
+    def send_message(self, text: str, preview: bool = False):
+        """Envía un texto. Devuelve el message_id (o True si no lo hay / DRY_RUN)."""
         if self.dry_run:
             log.info("[DRY RUN] Mensaje:\n%s", text)
             return True
-        self._call("sendMessage", {
+        payload = self._call("sendMessage", {
             "chat_id": self.chat_id,
             "text": text,
             "parse_mode": "HTML",
             "disable_web_page_preview": "false" if preview else "true",
         })
-        return True
+        return (payload.get("result") or {}).get("message_id") or True
+
+    # ------------------------------------------------------------ edición de mensajes ya publicados
+    def edit_caption(self, message_id: int, caption: str) -> None:
+        if self.dry_run:
+            log.info("[DRY RUN] Editar pie del mensaje %s:\n%s", message_id, caption)
+            return
+        self._edit("editMessageCaption", {"chat_id": self.chat_id, "message_id": message_id,
+                                          "caption": caption, "parse_mode": "HTML"})
+
+    def edit_text(self, message_id: int, text: str) -> None:
+        if self.dry_run:
+            log.info("[DRY RUN] Editar texto del mensaje %s:\n%s", message_id, text)
+            return
+        self._edit("editMessageText", {"chat_id": self.chat_id, "message_id": message_id, "text": text,
+                                       "parse_mode": "HTML", "disable_web_page_preview": "true"})
+
+    def edit_photo(self, message_id: int, photo: Path, caption: str) -> None:
+        """Cambia la foto (tarjeta) y el pie de un mensaje ya publicado."""
+        if self.dry_run:
+            log.info("[DRY RUN] Editar foto del mensaje %s (%s) con pie:\n%s", message_id, Path(photo).name, caption)
+            return
+        media = {"type": "photo", "media": "attach://tarjeta", "caption": caption, "parse_mode": "HTML"}
+        with open(photo, "rb") as fh:
+            self._edit("editMessageMedia", {"chat_id": self.chat_id, "message_id": message_id,
+                                            "media": json.dumps(media)},
+                       files={"tarjeta": (Path(photo).name, fh, "image/jpeg")})
+
+    def _edit(self, method: str, data: dict, files: dict | None = None) -> None:
+        try:
+            self._call(method, data, files)
+        except TelegramError as exc:
+            text = str(exc).lower()
+            if "message is not modified" in text:
+                return                      # ya tenía ese contenido
+            if "message to edit not found" in text or "message_id_invalid" in text:
+                raise MessageGone(str(exc)) from exc
+            raise
 
     def send_photo(self, photo: Path, caption: str, reply_to: int | None = None, silent: bool = False):
         """Envía una foto con pie. Devuelve el message_id (o True si no lo hay / DRY_RUN).

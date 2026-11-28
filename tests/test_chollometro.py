@@ -191,3 +191,25 @@ def test_build_sources_default_and_unknown(settings):
     assert set(REGISTRY) == {"chollometro", "amazon"}
     with pytest.raises(ValueError):
         build_sources(replace(settings, offer_sources=("inventada",)))
+
+
+# ------------------------------------------------------------ revisión posterior (1.8.0)
+def test_recheck_lee_la_oferta_aunque_ya_este_revisada(source):
+    source._remember("2050001")
+    data = source.recheck("2050001", "https://www.chollometro.com/ofertas/juego-2050001")
+    assert data["price"] and data["threadId"] == "2050001"
+    assert source.session.urls[-1] == "https://www.chollometro.com/ofertas/juego-2050001"
+
+
+def test_recheck_sin_url_usa_el_numero_de_hilo(source):
+    source.recheck("2050001")
+    assert source.session.urls[-1].endswith("/ofertas/oferta-2050001")
+
+
+def test_recheck_oferta_borrada(source):
+    assert source.recheck("2999999") == {"gone": True}
+
+
+def test_las_ofertas_guardan_su_pagina_de_origen(source):
+    offers = source.find_offers(limit=10, is_new=lambda o: True)
+    assert offers and all(o.source_url and o.source_url.startswith("https://www.chollometro.com/") for o in offers)
